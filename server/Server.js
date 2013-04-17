@@ -20,7 +20,7 @@ Server.prototype.start = function (target) {
   // set up listeners
   io.sockets.on('connection', function (socket) {
     console.log('sending: ' + util.inspect(self.state));
-    socket.emit('init', self.state);
+    socket.emit('init', self.state.fork());
 
     socket.on('YieldPush', function (map) {
       console.log('YieldPush: ' + util.inspect(map));

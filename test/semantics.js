@@ -25,14 +25,6 @@ function isForkOfState(fState, state) {
   return isFork;
 }
 
-function isForkOfType(fType, type) {
-  if (!(fType instanceof type.constructor))
-    return false;
-
-  return fType.isForkOf(type);
-}
-
-
 function isJoinOfStates(jState, state1, state2) {
   var isJoin = true;
 
@@ -54,32 +46,50 @@ function isJoinOfStates(jState, state1, state2) {
   return isJoin;
 }
 
-function isJoinOfTypes(jType, type1, type2) {
-  if (!(jType instanceof type1.constructor))
-    return false;
+// To avoid all panic:
+// A case on tags is unavoidable, because these tests
+// are used in the integration testing where server and
+// client types are compared. A CInt from server will not
+// equal a CInt from client, because they are loaded differently.
+function isForkOfType(fType, type) {
+  switch(fType.tag) {
+    case CInt.prototype.tag:
+      return isForkOfCInt(fType, type);
+    default:
+      return false;
+  }
+}
 
-  return jType.isJoinOf(type1, type2);
+function isJoinOfTypes(jType, type1, type2) {
+  switch(jType.tag) {
+    case CInt.prototype.tag:
+      return isJoinOfCInt(jType, type1, type2);
+    default:
+      return false;
+  }
 }
 
 
 
 // Type specific semantics
-CInt.prototype.isForkOf = function (type) {
-  return ((this.base   === type.base + type.offset) &&
-          (this.isSet  === false) &&
-          (this.offset === 0));
-};
+function isForkOfCInt(fType, type) {
+  return ((fType.base   === type.base + type.offset) &&
+          (fType.isSet  === false) &&
+          (fType.offset === 0));
+}
 
-CInt.prototype.isJoinOf = function (type1, type2) {
+function isJoinOfCInt(jType, type1, type2) {
   if (type2.isSet) {
-    return ((this.isSet  === true) &&
-            (this.base   === type2.base) &&
-            (this.offset === type2.offset));
+    return ((jType.isSet  === true) &&
+            (jType.base   === type2.base) &&
+            (jType.offset === type2.offset));
   }
-  return ((this.isSet  === type1.isSet) &&
-          (this.base   === type1.base + type2.offset) &&
-          (this.offset === type1.offset + type2.offset));
-};
+  return ((jType.isSet  === type1.isSet) &&
+          (jType.base   === type1.base + type2.offset) &&
+          (jType.offset === type1.offset + type2.offset));
+}
+
+
 
 // utility
 function numTypes(state) {

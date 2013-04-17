@@ -11,7 +11,122 @@ CloudTypes.createClient = function () {
 
 exports.CInt = require('../shared/CInt');
 })(window)
-},{"./CTClient":2,"../shared/CInt":3}],4:[function(require,module,exports){
+},{"./CTClient":2,"../shared/CInt":3}],2:[function(require,module,exports){
+var Client = require('./Client');
+var ClientState  = require('./ClientState');
+
+module.exports = CTClient;
+
+function CTClient() {
+  this.state  = new ClientState();
+  this.client = new Client(this.state);
+}
+
+CTClient.prototype.listen = function (host, callback) {
+  return this.client.listen(host, callback);
+};
+
+CTClient.prototype.get = function (name) {
+  return this.state.get(name);
+};
+
+
+CTClient.prototype.yield = function () {
+  return this.state.yield();
+};
+},{"./Client":4,"./ClientState":5}],3:[function(require,module,exports){
+var CloudType = require('./CloudType');
+var util = require('util');
+module.exports = CInt;
+
+
+function CInt(base, offset, isSet) {
+  this.base = base || 0;
+  this.offset = offset || 0;
+  this.isSet = isSet || false;
+}
+
+// put CloudType in prototype chain.
+CInt.prototype = Object.create(CloudType.prototype);
+CInt.prototype.tag = "CInt";
+
+// register for CloudType.fromJSON 
+CloudType.register(CInt);
+CInt.fromJSON = function (json) {
+  return new CInt(json.base, json.offset, json.isSet);
+};
+
+// used by the toJSON method of the CloudType prototype.
+CInt.prototype._toJSON = function () {
+  return {
+    base: this.base,
+    offset: this.offset,
+    isSet: this.isSet
+  };
+};
+
+// semantic operations
+CInt.prototype.set = function (base) {
+  this.offset = 0;
+  this.base = base;
+  this.isSet = true;
+};
+
+CInt.prototype.get = function () {
+  return (this.base + this.offset);
+};
+
+CInt.prototype.add = function (offset) {
+  this.offset += offset;
+};
+
+// Defining _join(cint, target) provides the join and joinIn methods
+// by the CloudType prototype.
+CInt.prototype._join = function (cint, target) {
+  if (cint.isSet) {
+    target.isSet  = true;
+    target.base   = cint.base;
+    target.offset = cint.offset;
+  } else {
+    target.isSet  = this.isSet;
+    target.base   = this.base;
+    target.offset = this.offset + cint.offset;
+  }
+};
+
+CInt.prototype.fork = function () {
+  return new CInt(this.base + this.offset, 0, false);
+};
+},{"util":6,"./CloudType":7}],7:[function(require,module,exports){
+module.exports = CloudType;
+
+function CloudType() {}
+
+CloudType.types = {};
+
+CloudType.register = function (type) {
+  this.types[type.prototype.tag] = type;
+};
+
+CloudType.fromJSON = function (json) {
+  return this.types[json.type].fromJSON(json.info);
+};
+
+CloudType.prototype.toJSON = function () {
+  return {
+    type: this.tag,
+    info: this._toJSON()
+  };
+};
+
+CloudType.prototype.join = function (cint) {
+  this._join(cint, this);
+};
+
+CloudType.prototype.joinIn = function (cint) {
+  this._join(cint, cint);
+};
+},{}],6:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -364,30 +479,51 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":5}],2:[function(require,module,exports){
-var Client = require('./Client');
-var ClientState  = require('./ClientState');
+},{"events":8}],5:[function(require,module,exports){
+var State = require('../shared/State');
 
-module.exports = CTClient;
+module.exports = ClientState;
 
-function CTClient() {
-  this.state  = new ClientState();
-  this.client = new Client(this.state);
+function ClientState() {
+  State.call(this);
+  this.pending = false;
+  this.received = false;
 }
 
-CTClient.prototype.listen = function (host, callback) {
-  return this.client.listen(host, callback);
+// "inherit" prototype from State
+ClientState.prototype = Object.create(State.prototype);
+
+ClientState.prototype.init = function (map, client) {
+  this.map = State.fromJSON(map).map;
+  this.client = client;
 };
 
-CTClient.prototype.get = function (name) {
-  return this.state.get(name);
+ClientState.prototype.yieldPull  = function (state) {
+  this.pending = false;
+  this.received = true;
+  this.toJoin = state;
 };
 
-
-CTClient.prototype.yield = function () {
-  return this.state.yield();
+ClientState.prototype.yield = function () {
+  // (B) Revision from the server arrived, merge
+  if (this.received) {
+    console.log('yield: got revision from server');
+    this.toJoin.joinIn(this);
+    this.received = false;
+    return this;
+  }
+  // (C) expecting a revision, but not present yet
+  if (this.pending) {
+    console.log('yield: waiting for server response');
+    return this;
+  }
+  // (A) Not expecting server response, send state to server
+  console.log('yield: pushing to server');
+  this.client.yieldPush();
+  this.pending = true;
+  this.received = false;
 };
-},{"./Client":6,"./ClientState":7}],8:[function(require,module,exports){
+},{"../shared/State":9}],10:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -441,7 +577,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],5:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
@@ -627,175 +763,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":8}],3:[function(require,module,exports){
-var CloudType = require('./CloudType');
-var util = require('util');
-module.exports = CInt;
-
-
-function CInt(base, offset, isSet) {
-  this.base = base || 0;
-  this.offset = offset || 0;
-  this.isSet = isSet || false;
-}
-
-// put CloudType in prototype chain.
-CInt.prototype = Object.create(CloudType.prototype);
-CInt.prototype.tag = "CInt";
-
-// register for CloudType.fromJSON 
-CloudType.register(CInt);
-CInt.fromJSON = function (json) {
-  return new CInt(json.base, json.offset, json.isSet);
-};
-
-// used by the toJSON method of the CloudType prototype.
-CInt.prototype._toJSON = function () {
-  return {
-    base: this.base,
-    offset: this.offset,
-    isSet: this.isSet
-  };
-};
-
-// semantic operations
-CInt.prototype.set = function (base) {
-  this.offset = 0;
-  this.base = base;
-  this.isSet = true;
-};
-
-CInt.prototype.get = function () {
-  return (this.base + this.offset);
-};
-
-CInt.prototype.add = function (offset) {
-  this.offset += offset;
-};
-
-// Defining _join(cint, target) provides the join and joinIn methods
-// by the CloudType prototype.
-CInt.prototype._join = function (cint, target) {
-  if (cint.isSet) {
-    target.isSet  = true;
-    target.base   = cint.base;
-    target.offset = cint.offset;
-  } else {
-    target.isSet  = this.isSet;
-    target.base   = this.base;
-    target.offset = this.offset + cint.offset;
-  }
-};
-
-CInt.prototype.fork = function () {
-  return new CInt(this.base + this.offset, 0, false);
-};
-},{"util":4,"./CloudType":9}],9:[function(require,module,exports){
-module.exports = CloudType;
-
-function CloudType() {}
-
-CloudType.types = {};
-
-CloudType.register = function (type) {
-  this.types[type.prototype.tag] = type;
-};
-
-CloudType.fromJSON = function (json) {
-  return this.types[json.type].fromJSON(json.info);
-};
-
-CloudType.prototype.toJSON = function () {
-  return {
-    type: this.tag,
-    info: this._toJSON()
-  };
-};
-
-CloudType.prototype.join = function (cint) {
-  this._join(cint, this);
-};
-
-CloudType.prototype.joinIn = function (cint) {
-  this._join(cint, cint);
-};
-},{}],7:[function(require,module,exports){
-var State = require('../shared/State');
-
-module.exports = ClientState;
-
-function ClientState() {
-  State.call(this);
-  this.pending = false;
-  this.received = false;
-}
-
-// "inherit" prototype from State
-ClientState.prototype = Object.create(State.prototype);
-
-ClientState.prototype.init = function (map, client) {
-  this.map = State.fromJSON(map).map;
-  this.client = client;
-};
-
-ClientState.prototype.yieldPull  = function (state) {
-  this.pending = false;
-  this.received = true;
-  this.toJoin = state;
-};
-
-ClientState.prototype.yield = function () {
-  // (B) Revision from the server arrived, merge
-  if (this.received) {
-    console.log('yield: got revision from server');
-    this.toJoin.joinIn(this);
-    this.received = false;
-    return this;
-  }
-  // (C) expecting a revision, but not present yet
-  if (this.pending) {
-    console.log('yield: waiting for server response');
-    return this;
-  }
-  // (A) Not expecting server response, send state to server
-  console.log('yield: pushing to server');
-  this.client.yieldPush();
-  this.pending = true;
-  this.received = false;
-};
-},{"../shared/State":10}],6:[function(require,module,exports){
-(function(global){var State = require('../shared/State');
-var ClientState = require('./ClientState');
-var io = require('socket.io-client');
-
-global.io = io;
-
-module.exports = Client;
-
-function Client(state) {
-  this.state = state;
-}
-
-Client.prototype.listen = function (host, callback) {
-  var self = this;
-  this.socket = io.connect(host);
-  this.socket.on('init', function (map) {
-    console.log('initing map: ' + JSON.stringify(map));
-    self.state.init(map, self);
-    callback();
-  });
-  this.socket.on('YieldPull', function (map) {
-    var state = new State(map);
-    self.state.yieldPull(state);
-    console.log('yieldPull: ' + state);
-  });
-};
-
-Client.prototype.yieldPush = function () {
-  this.socket.emit('YieldPush', this.state);
-};
-})(window)
-},{"../shared/State":10,"./ClientState":7,"socket.io-client":11}],10:[function(require,module,exports){
+},{"__browserify_process":10}],9:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 module.exports = State;
@@ -859,7 +827,39 @@ State.prototype.fork = function (rev) {
   return new State(map);
 };
 
-},{"./CloudType":9}],11:[function(require,module,exports){
+},{"./CloudType":7}],4:[function(require,module,exports){
+(function(global){var State = require('../shared/State');
+var ClientState = require('./ClientState');
+var io = require('socket.io-client');
+
+global.io = io;
+
+module.exports = Client;
+
+function Client(state) {
+  this.state = state;
+}
+
+Client.prototype.listen = function (host, callback) {
+  var self = this;
+  this.socket = io.connect(host);
+  this.socket.on('init', function (map) {
+    console.log('initing map: ' + JSON.stringify(map));
+    self.state.init(map, self);
+    callback();
+  });
+  this.socket.on('YieldPull', function (map) {
+    var state = new State(map);
+    self.state.yieldPull(state);
+    console.log('yieldPull: ' + state);
+  });
+};
+
+Client.prototype.yieldPush = function () {
+  this.socket.emit('YieldPush', this.state);
+};
+})(window)
+},{"../shared/State":9,"./ClientState":5,"socket.io-client":11}],11:[function(require,module,exports){
 (function(){/*! Socket.IO.js build:0.9.11, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);

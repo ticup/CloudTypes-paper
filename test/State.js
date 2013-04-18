@@ -1,7 +1,7 @@
-var State     = require('../shared/State');
-var CInt      = require('../shared/CInt');
+var State     = require('./extensions/State');
+var CInt      = require('./extensions/CInt');
 var should    = require('should');
-var semantics = require('./semantics');
+var stubs     = require('./stubs');
 
 describe('State', function () {
   describe('#new()', function () {
@@ -76,7 +76,7 @@ describe('State', function () {
 
 
     it('should join the given state into its own state, result in own state', function () {
-      semantics.isJoinOfStates(jState, state1, state2).should.equal(true);
+      jState.isJoinOf(state1, state2).should.equal(true);
     });
   });
 
@@ -91,7 +91,7 @@ describe('State', function () {
     state1.joinIn(jState);
 
     it('should join the given state into its own state, result in the other state', function () {
-      semantics.isJoinOfStates(jState, state1, state2).should.equal(true);
+      jState.isJoinOf(state1, state2).should.equal(true);
     });
   });
 
@@ -110,7 +110,13 @@ describe('State', function () {
     });
 
     it('should return a forked state of given state', function () {
-      semantics.isForkOfState(fork, state).should.equal(true);
+      fork.isForkOf(state).should.equal(true);
+    });
+
+    it('should return initial state from initial state', function () {
+      var initState = State.fromJSON(stubs.unchanged);
+      var f = initState.fork();
+      initState.isEqual(f);
     });
   });
 

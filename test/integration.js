@@ -5,15 +5,14 @@ var Browser    = require('zombie');
 var http       = require('http');
 var util       = require('util');
 
-var State      = require('../shared/State');
-var semantics  = require('./semantics');
+var State      = require('./extensions/State');
+var CInt       = require('./extensions/CInt');
 
 var CloudTypesServer = require('../server/main.js');
 var CloudTypesClient = require('../server/main.js');
 
-var CInt = CloudTypesServer.CInt;
 
-var bundle = fs.readFileSync('./client/bundle.js').toString();
+var bundle = fs.readFileSync('./test/client/bundle.js').toString();
 var index  = "<html><head></head><body></body><script src='bundle.js'></script></html>";
 
 
@@ -76,41 +75,39 @@ describe('CloudType Integration #', function () {
   foo.set(100);
   foo.add(2);
 
-  describe('Availability: ', function () {
-    describe('Creating Client ->', function () {
-      it('should have a global "io"', function (done) {
-        createBrowser(port, function (window) {
-          window.should.have.property('io');
-          done();
-        });
-      });
-      it('should have a global "CloudTypes"', function (done) {
-        createBrowser(port, function (window) {
-          window.should.have.property('CloudTypes');
-          done();
-        });
-        it('should have a property "createClient"', function (done) {
-          window.cloudTypes.should.have.property('createClient');
-          done();
-        });
+  describe('Creating Client ->', function () {
+    it('should have a global "io"', function (done) {
+      createBrowser(port, function (window) {
+        window.should.have.property('io');
+        done();
       });
     });
-    describe('Connecting Client ->', function () {
-      it('should call the callback after listening', function (done) {
-        createBrowser(port, function (window) {
-          var c = window.CloudTypes.createClient();
-          //window.io.connect(host);
-          c.listen(host, done);
-        });
+    it('should have a global "CloudTypes"', function (done) {
+      createBrowser(port, function (window) {
+        window.should.have.property('CloudTypes');
+        done();
       });
-      it('should have forked state after callback', function (done) {
-        createBrowser(port, function (window) {
-          var c = window.CloudTypes.createClient();
+      it('should have a property "createClient"', function (done) {
+        window.cloudTypes.should.have.property('createClient');
+        done();
+      });
+    });
+  });
+  describe('Connecting Client ->', function () {
+    it('should call the callback after listening', function (done) {
+      createBrowser(port, function (window) {
+        var c = window.CloudTypes.createClient();
+        //window.io.connect(host);
+        c.listen(host, done);
+      });
+    });
+    it('should have forked state after callback', function (done) {
+      createBrowser(port, function (window) {
+        var c = window.CloudTypes.createClient();
 
-          c.listen(host, function () {
-            semantics.isForkOfState(c.state, s.state).should.equal(true);
-            done();
-          });
+        c.listen(host, function () {
+          c.state.isForkOf(s.state).should.equal(true);
+          done();
         });
       });
     });

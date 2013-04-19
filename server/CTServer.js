@@ -9,7 +9,12 @@ function CTServer() {
 }
 
 CTServer.prototype.publish = function (target) {
-  this.server.start(target);
+  this.server.open(target);
+  this.state.published(this.server);
+};
+
+CTServer.prototype.close = function () {
+  this.server.close();
 };
 
 CTServer.prototype.declare = function (name, ctype) {

@@ -7,7 +7,7 @@ function Server(state) {
   this.state = state;
 }
 
-Server.prototype.start = function (target) {
+Server.prototype.open = function (target) {
   var self = this;
   // target: port or http server
   // default = port 8090
@@ -16,6 +16,7 @@ Server.prototype.start = function (target) {
   // open websockets
   console.log('opening on ' + target);
   var io = IO.listen(target);
+  this.io = io;
 
   // set up listeners
   io.sockets.on('connection', function (socket) {
@@ -27,10 +28,11 @@ Server.prototype.start = function (target) {
       var state = State.fromJSON(map);
       self.state.join(state);
       console.log('YieldPush: ' + util.inspect(self.state.map));
-      socket.emit('YieldPush', self.state);
+      socket.emit('YieldPull', self.state.fork());
     });
   });
+};
 
-  this.state.publish();
-
+Server.prototype.close = function () {
+  this.io.server.close();
 };

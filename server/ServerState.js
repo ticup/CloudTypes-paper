@@ -6,23 +6,27 @@ module.exports = ServerState;
 
 function ServerState() {
   State.call(this);
-  this.published = false;
+  this.isPublished = false;
 }
 
 // "inherit" prototype from State
 ServerState.prototype = Object.create(State.prototype);
 
+ServerState.prototype.published = function (server) {
+  this.server = server;
+  this.publish = true;
+};
 
 ServerState.prototype.declare = function (name, ctype) {
-  if (this.published)
+  if (this.isPublished)
     throw "Declare: Can not declare types after being published";
   console.log('declaring ' + name);
   this.map[name] = ctype;
   return this;
 };
 
-ServerState.prototype.publish = function () {
-  console.log(util.inspect(this.map));
-  // console.log('publishing: ' + this.toJSON());
-  this.published = true;
+ServerState.prototype.yieldPush = function (state) {
+  this.join(state);
+  console.log('YieldPush: ' + util.inspect(this.map));
+  this.server.yieldPull(this);
 };

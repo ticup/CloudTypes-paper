@@ -8,7 +8,7 @@ function ClientState() {
   this.received = false;
 }
 
-// "inherit" prototype from State
+// State in prototype chain
 ClientState.prototype = Object.create(State.prototype);
 
 ClientState.prototype.init = function (map, client) {

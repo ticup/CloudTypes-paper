@@ -19,10 +19,14 @@ Client.prototype.listen = function (host, callback) {
     callback();
   });
   this.socket.on('YieldPull', function (map) {
-    var state = new State(map);
+    var state = State.fromJSON(map);
     self.state.yieldPull(state);
-    console.log('yieldPull: ' + state);
+    console.log('yieldPull receive on server: ' + state);
   });
+};
+
+Client.prototype.close = function () {
+  return this.socket.disconnect();
 };
 
 Client.prototype.yieldPush = function () {

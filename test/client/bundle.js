@@ -49,6 +49,10 @@ CInt.prototype.isEqual = function (cint) {
           (this.base   === cint.base) &&
           (this.offset === cint.offset));
 };
+
+CInt.prototype.isConsistent = function (cint) {
+  return (this.get() === cint.get());
+};
 },{"../../shared/CInt":6}],4:[function(require,module,exports){
 var State = require('../../shared/State');
 
@@ -57,7 +61,6 @@ module.exports = State;
 State.prototype.isForkOf = function (state) {
   var fState = this;
   var isFork = true;
-
   // each type in state should have an equivalent forked type in fState
   state.eachType(function (name, type) {
     var fType = fState.get(name);
@@ -67,7 +70,7 @@ State.prototype.isForkOf = function (state) {
       isFork = false;
   });
 
-  if (numTypes(state) != numTypes(fState))
+  if (state.numTypes() != fState.numTypes())
     isFork = false;
 
 
@@ -76,7 +79,6 @@ State.prototype.isForkOf = function (state) {
 
 State.prototype.isJoinOf = function (state1, state2) {
   var isJoin = true;
-
   this.eachType(function (name, jType) {
     var type1 = state1.get(name);
     var type2 = state2.get(name);
@@ -86,10 +88,10 @@ State.prototype.isJoinOf = function (state1, state2) {
       isJoin = false;
   });
 
-  if (numTypes(state1) !== numTypes(state2))
+  if (state2.numTypes() !== state2.numTypes())
     throw "joined states do not have same number of types";
 
-  if (numTypes(this) !== numTypes(state1))
+  if (this.numTypes() !== state1.numTypes())
     isJoin = false;
 
   return isJoin;
@@ -97,7 +99,6 @@ State.prototype.isJoinOf = function (state1, state2) {
 
 State.prototype.isEqual = function (state) {
   var isEqual = true;
-
   this.eachType(function (name, type1) {
     var type2 = state.get(name);
     if (!type2)
@@ -106,45 +107,32 @@ State.prototype.isEqual = function (state) {
       isEqual = false;
   });
 
-  if (numTypes(this) !== numTypes(state))
+  if (this.numTypes() !== state.numTypes())
     isEqual = false;
 
   return isEqual;
 };
 
-// To avoid all panic:
-// A case on tags is unavoidable, because these tests
-// are used in the integration testing where server and
-// client types are compared. A CInt from server will not
-// equal a CInt from client, because they are loaded differently.
-// function isForkOfType(fType, type) {
-//   switch(fType.tag) {
-//     case CInt.prototype.tag:
-//       return isForkOfCInt(fType, type);
-//     default:
-//       return false;
-//   }
-// }
+State.prototype.isConsistent = function (state) {
+  var isConsistent = true;
+  this.eachType(function (name, type1) {
+    var type2 = state.get(name);
+    if (!type1.isConsistent(type2))
+      isConsistent = false;
+  });
 
-// function isJoinOfTypes(jType, type1, type2) {
-//   switch(jType.tag) {
-//     case CInt.prototype.tag:
-//       return isJoinOfCInt(jType, type1, type2);
-//     default:
-//       return false;
-//   }
-// }
+  return isConsistent;
+};
 
 
 
-// utility
-function numTypes(state) {
+State.prototype.numTypes = function () {
   var num = 0;
-  state.eachType(function (name, type) {
+  this.eachType(function (name, type) {
     num += 1;
   });
   return num;
-}
+};
 },{"../../shared/State":7}],8:[function(require,module,exports){
 var events = require('events');
 
@@ -498,34 +486,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":9}],5:[function(require,module,exports){
-var Client = require('./Client');
-var ClientState  = require('./ClientState');
-
-module.exports = CTClient;
-
-function CTClient() {
-  this.state  = new ClientState();
-  this.client = new Client(this.state);
-}
-
-CTClient.prototype.listen = function (host, callback) {
-  return this.client.listen(host, callback);
-};
-
-CTClient.prototype.close = function () {
-  return this.client.close();
-};
-
-CTClient.prototype.get = function (name) {
-  return this.state.get(name);
-};
-
-
-CTClient.prototype.yield = function () {
-  return this.state.yield();
-};
-},{"./Client":10,"./ClientState":11}],12:[function(require,module,exports){
+},{"events":9}],10:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -765,7 +726,112 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":12}],7:[function(require,module,exports){
+},{"__browserify_process":10}],5:[function(require,module,exports){
+var Client = require('./Client');
+var ClientState  = require('./ClientState');
+
+module.exports = CTClient;
+
+function CTClient() {
+  this.state  = new ClientState();
+  this.client = new Client(this.state);
+}
+
+CTClient.prototype.listen = function (host, callback) {
+  return this.client.listen(host, callback);
+};
+
+CTClient.prototype.close = function () {
+  return this.client.close();
+};
+
+CTClient.prototype.get = function (name) {
+  return this.state.get(name);
+};
+
+
+CTClient.prototype.yield = function () {
+  return this.state.yield();
+};
+
+CTClient.prototype.flush = function (timeout) {
+  return this.state.flush(timeout);
+};
+},{"./Client":11,"./ClientState":12}],6:[function(require,module,exports){
+var CloudType = require('./CloudType');
+var util = require('util');
+module.exports = CInt;
+
+
+function CInt(base, offset, isSet) {
+  this.base = base || 0;
+  this.offset = offset || 0;
+  this.isSet = isSet || false;
+}
+
+// put CloudType in prototype chain.
+CInt.prototype = Object.create(CloudType.prototype);
+CInt.prototype.tag = "CInt";
+
+// register for CloudType.fromJSON 
+CloudType.register(CInt);
+CInt.fromJSON = function (json) {
+  return new CInt(json.base, json.offset, json.isSet);
+};
+
+// used by the toJSON method of the CloudType prototype.
+CInt.prototype._toJSON = function () {
+  return {
+    base: this.base,
+    offset: this.offset,
+    isSet: this.isSet
+  };
+};
+
+// semantic operations
+CInt.prototype.set = function (base) {
+  if (typeof base !== 'number')
+    throw "CInt::set(base) : base should be of type number, given: " + base;
+  this.offset = 0;
+  this.base = base;
+  this.isSet = true;
+};
+
+CInt.prototype.get = function () {
+  return (this.base + this.offset);
+};
+
+CInt.prototype.add = function (offset) {
+  if (typeof offset !== 'number')
+    throw "CInt::add(base) : offset should be of type number, given: " + offset;
+  this.offset += offset;
+};
+
+// Defining _join(cint, target) provides the join and joinIn methods
+// by the CloudType prototype.
+CInt.prototype._join = function (cint, target) {
+  if (cint.isSet) {
+    target.isSet  = true;
+    target.base   = cint.base;
+    target.offset = cint.offset;
+  } else {
+    target.isSet  = this.isSet;
+    target.base   = this.base;
+    target.offset = this.offset + cint.offset;
+  }
+};
+
+CInt.prototype.fork = function () {
+  return new CInt(this.base + this.offset, 0, false);
+};
+
+CInt.prototype.applyFork = function () {
+  this.base = this.base + this.offset;
+  this.offset = 0;
+  this.isSet = false;
+  return this;
+};
+},{"util":8,"./CloudType":13}],7:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 module.exports = State;
@@ -816,9 +882,6 @@ State.prototype.join = function (rev) {
 State.prototype.joinIn = function (rev) {
   this.eachType(function (name, type1) {
     var type2 = rev.get(name);
-    console.log('joinIn:' + name);
-    console.log(Object.getPrototypeOf(type1));
-    console.log(type2);
     type1.joinIn(type2);
   });
   return this;
@@ -832,70 +895,14 @@ State.prototype.fork = function (rev) {
   return new State(map);
 };
 
-},{"./CloudType":13}],6:[function(require,module,exports){
-var CloudType = require('./CloudType');
-var util = require('util');
-module.exports = CInt;
-
-
-function CInt(base, offset, isSet) {
-  this.base = base || 0;
-  this.offset = offset || 0;
-  this.isSet = isSet || false;
-}
-
-// put CloudType in prototype chain.
-CInt.prototype = Object.create(CloudType.prototype);
-CInt.prototype.tag = "CInt";
-
-// register for CloudType.fromJSON 
-CloudType.register(CInt);
-CInt.fromJSON = function (json) {
-  return new CInt(json.base, json.offset, json.isSet);
+State.prototype.applyFork = function () {
+  var self = this;
+  this.eachType(function (name, type) {
+    type.applyFork();
+  });
 };
 
-// used by the toJSON method of the CloudType prototype.
-CInt.prototype._toJSON = function () {
-  return {
-    base: this.base,
-    offset: this.offset,
-    isSet: this.isSet
-  };
-};
-
-// semantic operations
-CInt.prototype.set = function (base) {
-  this.offset = 0;
-  this.base = base;
-  this.isSet = true;
-};
-
-CInt.prototype.get = function () {
-  return (this.base + this.offset);
-};
-
-CInt.prototype.add = function (offset) {
-  this.offset += offset;
-};
-
-// Defining _join(cint, target) provides the join and joinIn methods
-// by the CloudType prototype.
-CInt.prototype._join = function (cint, target) {
-  if (cint.isSet) {
-    target.isSet  = true;
-    target.base   = cint.base;
-    target.offset = cint.offset;
-  } else {
-    target.isSet  = this.isSet;
-    target.base   = this.base;
-    target.offset = this.offset + cint.offset;
-  }
-};
-
-CInt.prototype.fork = function () {
-  return new CInt(this.base + this.offset, 0, false);
-};
-},{"util":8,"./CloudType":13}],13:[function(require,module,exports){
+},{"./CloudType":13}],13:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -924,14 +931,14 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var State = require('../shared/State');
 
 module.exports = ClientState;
 
 function ClientState() {
   State.call(this);
-  this.pending = false;
+  this.pending  = false;
   this.received = false;
 }
 
@@ -939,14 +946,14 @@ function ClientState() {
 ClientState.prototype = Object.create(State.prototype);
 
 ClientState.prototype.init = function (map, client) {
-  this.map = State.fromJSON(map).map;
+  this.map    = State.fromJSON(map).map;
   this.client = client;
 };
 
-ClientState.prototype.yieldPull  = function (state) {
-  this.pending = false;
+ClientState.prototype.yieldPull = function (state) {
+  this.pending  = false;
   this.received = true;
-  this.toJoin = state;
+  this.toJoin   = state;
 };
 
 ClientState.prototype.yield = function () {
@@ -965,10 +972,40 @@ ClientState.prototype.yield = function () {
   // (A) Not expecting server response, send state to server
   console.log('yield: pushing to server');
   this.client.yieldPush();
-  this.pending = true;
+  this.applyFork();
+  this.pending  = true;
   this.received = false;
 };
-},{"../shared/State":7}],10:[function(require,module,exports){
+
+ClientState.prototype.flush = function (timeout) {
+  timeout = timeout || 3000;
+  this.client.flush();
+
+  // set expiration
+  var expired = false;
+  setTimeout(function () {
+    expired = true;
+  }, timeout);
+
+  for (;;) {
+    if (this.received) {
+      console.log('flush: got revision from server');
+      // should actually replace this state,
+      // but since there should be no operations done merging is the same.
+      this.toJoin.joinIn(this);
+      this.received = false;
+      return this;
+    } else if (expired) {
+      throw 'flush: could not contact server in time (' + timeout  + 'ms)';
+    }
+  }
+};
+
+ClientState.prototype.flushPull = function (state) {
+  this.received = true;
+  this.toJoin   = state;
+};
+},{"../shared/State":7}],11:[function(require,module,exports){
 (function(global){var State = require('../shared/State');
 var ClientState = require('./ClientState');
 var io = require('socket.io-client');
@@ -989,11 +1026,6 @@ Client.prototype.listen = function (host, callback) {
     self.state.init(map, self);
     callback();
   });
-  this.socket.on('YieldPull', function (map) {
-    var state = State.fromJSON(map);
-    self.state.yieldPull(state);
-    console.log('yieldPull receive on server: ' + state);
-  });
 };
 
 Client.prototype.close = function () {
@@ -1001,10 +1033,22 @@ Client.prototype.close = function () {
 };
 
 Client.prototype.yieldPush = function () {
-  this.socket.emit('YieldPush', this.state);
+  var self = this;
+  this.socket.emit('YieldPush', this.state, function yieldPull(map) {
+    var state = State.fromJSON(map);
+    self.state.yieldPull(state);
+  });
+};
+
+Client.prototype.flushPush = function () {
+  var state = this.state;
+  this.socket.emit('FlushPush', this.state, function flushPull(map) {
+    var state = State.fromJSON(map);
+    self.state.flushPull(state);
+  });
 };
 })(window)
-},{"../shared/State":7,"./ClientState":11,"socket.io-client":14}],14:[function(require,module,exports){
+},{"../shared/State":7,"./ClientState":12,"socket.io-client":14}],14:[function(require,module,exports){
 (function(){/*! Socket.IO.js build:0.9.11, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);

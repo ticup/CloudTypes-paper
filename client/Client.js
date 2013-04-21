@@ -18,11 +18,6 @@ Client.prototype.listen = function (host, callback) {
     self.state.init(map, self);
     callback();
   });
-  this.socket.on('YieldPull', function (map) {
-    var state = State.fromJSON(map);
-    self.state.yieldPull(state);
-    console.log('yieldPull receive on server: ' + state);
-  });
 };
 
 Client.prototype.close = function () {
@@ -30,5 +25,17 @@ Client.prototype.close = function () {
 };
 
 Client.prototype.yieldPush = function () {
-  this.socket.emit('YieldPush', this.state);
+  var self = this;
+  this.socket.emit('YieldPush', this.state, function yieldPull(map) {
+    var state = State.fromJSON(map);
+    self.state.yieldPull(state);
+  });
+};
+
+Client.prototype.flushPush = function () {
+  var state = this.state;
+  this.socket.emit('FlushPush', this.state, function flushPull(map) {
+    var state = State.fromJSON(map);
+    self.state.flushPull(state);
+  });
 };

@@ -14,21 +14,23 @@ Server.prototype.open = function (target) {
   target = target || 8090;
 
   // open websockets
-  console.log('opening on ' + target);
   var io = IO.listen(target);
   this.io = io;
 
   // set up listeners
   io.sockets.on('connection', function (socket) {
-    console.log('sending: ' + util.inspect(self.state));
     socket.emit('init', self.state.fork());
 
-    socket.on('YieldPush', function (map) {
-      console.log('YieldPush: ' + util.inspect(map));
+    socket.on('YieldPush', function (map, yieldPull) {
       var state = State.fromJSON(map);
       self.state.join(state);
-      console.log('YieldPush: ' + util.inspect(self.state.map));
-      socket.emit('YieldPull', self.state.fork());
+      yieldPull(self.state.fork());
+    });
+
+    socket.on('FlushPush', function (map, flushPull) {
+      var state = State.fromJSON(map);
+      self.state.join(state);
+      flushPull(self.state.fork());
     });
   });
 };

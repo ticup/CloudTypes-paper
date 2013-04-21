@@ -30,3 +30,7 @@ CInt.prototype.isEqual = function (cint) {
           (this.base   === cint.base) &&
           (this.offset === cint.offset));
 };
+
+CInt.prototype.isConsistent = function (cint) {
+  return (this.get() === cint.get());
+};

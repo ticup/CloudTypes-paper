@@ -60,3 +60,10 @@ State.prototype.fork = function (rev) {
   });
   return new State(map);
 };
+
+State.prototype.applyFork = function () {
+  var self = this;
+  this.eachType(function (name, type) {
+    type.applyFork();
+  });
+};

@@ -30,6 +30,8 @@ CInt.prototype._toJSON = function () {
 
 // semantic operations
 CInt.prototype.set = function (base) {
+  if (typeof base !== 'number')
+    throw "CInt::set(base) : base should be of type number, given: " + base;
   this.offset = 0;
   this.base = base;
   this.isSet = true;
@@ -40,6 +42,8 @@ CInt.prototype.get = function () {
 };
 
 CInt.prototype.add = function (offset) {
+  if (typeof offset !== 'number')
+    throw "CInt::add(base) : offset should be of type number, given: " + offset;
   this.offset += offset;
 };
 
@@ -59,4 +63,11 @@ CInt.prototype._join = function (cint, target) {
 
 CInt.prototype.fork = function () {
   return new CInt(this.base + this.offset, 0, false);
+};
+
+CInt.prototype.applyFork = function () {
+  this.base = this.base + this.offset;
+  this.offset = 0;
+  this.isSet = false;
+  return this;
 };

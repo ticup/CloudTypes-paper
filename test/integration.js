@@ -137,74 +137,157 @@ describe('Integration #', function () {
     });
   });
 
-  it('should eventually sync with yield (test could fail if too slow!)', function (done) {
+  it('should give eventual consistency for all states (1) (this test could fail if too slow!)', function (done) {
     createClient(function (window1, client1) {
       var foo1 = client1.get('foo');
       foo1.set(100);
       foo1.get().should.equal(100);
       createClient(function (window2, client2) {
-        client1.state.isForkOf(server.state).should.equal(false);
-        client2.state.isForkOf(server.state).should.equal(true);
+        client1.state.isConsistent(server.state).should.equal(false);
+        client2.state.isConsistent(server.state).should.equal(true);
 
-        // yield is asynchronous
+        // yield1 for client1: sends revision client1 -> server
         client1.yield();
-        client1.state.isEqual(server.state).should.equal(false);
+        client1.state.isConsistent(server.state).should.equal(false);
 
         // server synced with client1 after some ms
         setTimeout(function () {
-          client1.state.isEqual(server.state).should.equal(true);
-          client2.state.isForkOf(server.state).should.equal(false);
+          client1.state.isConsistent(server.state).should.equal(true);
+          client2.state.isConsistent(server.state).should.equal(false);
 
-          // first yield will send changes from client -> server
+          // yield1 for client2: sends changes from client2 -> server
           client2.yield();
 
-          // secon yield will do nothing, because it has not received revision of server
+          // yield2 for client2: does nothing, because it has not received revision of server yet
           client2.yield();
-          client2.state.isForkOf(server.state).should.equal(false);
+          client2.state.isConsistent(server.state).should.equal(false);
 
           setTimeout(function () {
-            client2.state.isForkOf(server.state).should.equal(false);
+            client2.state.isConsistent(server.state).should.equal(false);
 
-            // client should have received revision of server, calling yield
-            // will join states. States should be consistent here, because
-            // no changes are made on the client in the meantime.
-            client2.yield();
+            // yield3 for client2: should have received revision of server by now
+            // and thus merges server state with client state. Since no changes are
+            // made to client2 in the meantime, states should be consistent.
+            client2.yield(); // (this case of yield is synchronous)
 
-            console.log('server: ' );
-            console.log(util.inspect(server.state.map));
-            console.log('client: ' );
-
-            console.log(util.inspect(client2.state.map));
-            // this yield is synchronous, because no communication is made with the server at this point!
-            client2.state.isForkOf(server.state).should.equal(true);
-
+            // at this point all states are consistent again.
+            client2.state.isConsistent(server.state).should.equal(true);
+            client1.state.isConsistent(server.state).should.equal(true);
             client1.close();
             client2.close();
-          done();
-
+            done();
           }, 200);
         }, 200);
       });
     });
   });
-  // describe('Scenario 1', function () {
-  //   var httpServer = createHttpServer(port);
-  //   var server = CloudTypeServer.createServer();
 
-  //   var foo = new CInt();
-  //   var bar = new CInt();
-  //   server.declare('foo', foo);
-  //   server.declare('bar', bar);
+  it('should give eventual consistency for all states (2) (this test could fail if too slow!)', function (done) {
+    foo.get().should.equal(0);
+    createClient(function (window1, client1) {
+      var foo1 = client1.get('foo');
+      foo1.set(100);
+      foo1.get().should.equal(100);
 
-  //   server.publish(httpServer);
+      createClient(function (window2, client2) {
+        var foo2 = client2.get('foo');
+        foo2.get().should.equal(0);
+        foo2.add(50);
 
-  //   createClient(function (window, client) {
-  //     client.listen(host, function () {
+        // yield1 for client1: sends revision client1 -> server
+        client1.yield();
 
-  //       it('should have the same state of server', function () {
-  //         client.state.isEqual(server.state).should.equal(true);
-  //       });
-  //     });
-  //   });
-  // });
+        // server synced with client1 after some ms
+        setTimeout(function () {
+          foo.get().should.equal(100);
+
+          // yield1 for client2: sends changes from client2 -> server
+          client2.yield();
+
+          setTimeout(function () {
+            foo.get().should.equal(150);
+
+            // yield2 for client1: merges revision of server
+            // note: this revision was sent before client2 sent its revision, therefore
+            // another 2 yields will be necessary for complete synchronization.
+            client1.yield();
+            foo1.get().should.equal(100);
+
+            // yield2 for client2: merge revision of server into client2.
+            client2.yield();
+            foo2.get().should.equal(150);
+
+            client1.yield();
+
+            setTimeout(function () {
+              client1.yield();
+              foo1.get().should.equal(150);
+
+              // at this point all states are consistent again.
+              client2.state.isConsistent(server.state).should.equal(true);
+              client1.state.isConsistent(server.state).should.equal(true);
+              client1.close();
+              client2.close();
+              done();
+            }, 200);
+          }, 200);
+        }, 200);
+      });
+    });
+  });
+
+
+  it('should give eventual consistency for all states (3) (this test could fail if too slow!)', function (done) {
+    foo.get().should.equal(0);
+    createClient(function (window1, client1) {
+      var foo1 = client1.get('foo');
+      foo1.set(100);
+      foo1.get().should.equal(100);
+
+      createClient(function (window2, client2) {
+        var foo2 = client2.get('foo');
+        foo2.get().should.equal(0);
+        foo2.add(50);
+
+        // yield1 for client2: sends revision client2 -> server
+        client2.yield();
+
+        // server synced with client2 after some ms
+        setTimeout(function () {
+          foo.get().should.equal(50);
+
+          // yield1 for client1: sends changes from client1 -> server
+          client1.yield();
+
+          // yield2 for client2: merges revision of server with client2
+          client2.yield();
+          // still 50, because revision was sent before merge with client1.
+          foo2.get().should.equal(50);
+
+          setTimeout(function () {
+            // the set of client1 has overwritten the add of client2.
+            foo.get().should.equal(100);
+
+            // nothing changes for client1 when merged
+            client1.yield();
+            foo1.get().should.equal(100);
+
+            client2.yield();
+
+            setTimeout(function () {
+              client2.yield();
+              foo2.get().should.equal(100);
+
+              // at this point all states are consistent again.
+              client2.state.isConsistent(server.state).should.equal(true);
+              client1.state.isConsistent(server.state).should.equal(true);
+              client1.close();
+              client2.close();
+              done();
+            }, 200);
+          }, 200);
+        }, 200);
+      });
+    });
+  });
 });

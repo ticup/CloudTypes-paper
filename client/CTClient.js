@@ -24,3 +24,7 @@ CTClient.prototype.get = function (name) {
 CTClient.prototype.yield = function () {
   return this.state.yield();
 };
+
+CTClient.prototype.flush = function (timeout) {
+  return this.state.flush(timeout);
+};

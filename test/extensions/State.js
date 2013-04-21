@@ -5,7 +5,6 @@ module.exports = State;
 State.prototype.isForkOf = function (state) {
   var fState = this;
   var isFork = true;
-
   // each type in state should have an equivalent forked type in fState
   state.eachType(function (name, type) {
     var fType = fState.get(name);
@@ -15,7 +14,7 @@ State.prototype.isForkOf = function (state) {
       isFork = false;
   });
 
-  if (numTypes(state) != numTypes(fState))
+  if (state.numTypes() != fState.numTypes())
     isFork = false;
 
 
@@ -24,7 +23,6 @@ State.prototype.isForkOf = function (state) {
 
 State.prototype.isJoinOf = function (state1, state2) {
   var isJoin = true;
-
   this.eachType(function (name, jType) {
     var type1 = state1.get(name);
     var type2 = state2.get(name);
@@ -34,10 +32,10 @@ State.prototype.isJoinOf = function (state1, state2) {
       isJoin = false;
   });
 
-  if (numTypes(state1) !== numTypes(state2))
+  if (state2.numTypes() !== state2.numTypes())
     throw "joined states do not have same number of types";
 
-  if (numTypes(this) !== numTypes(state1))
+  if (this.numTypes() !== state1.numTypes())
     isJoin = false;
 
   return isJoin;
@@ -45,7 +43,6 @@ State.prototype.isJoinOf = function (state1, state2) {
 
 State.prototype.isEqual = function (state) {
   var isEqual = true;
-
   this.eachType(function (name, type1) {
     var type2 = state.get(name);
     if (!type2)
@@ -54,42 +51,29 @@ State.prototype.isEqual = function (state) {
       isEqual = false;
   });
 
-  if (numTypes(this) !== numTypes(state))
+  if (this.numTypes() !== state.numTypes())
     isEqual = false;
 
   return isEqual;
 };
 
-// To avoid all panic:
-// A case on tags is unavoidable, because these tests
-// are used in the integration testing where server and
-// client types are compared. A CInt from server will not
-// equal a CInt from client, because they are loaded differently.
-// function isForkOfType(fType, type) {
-//   switch(fType.tag) {
-//     case CInt.prototype.tag:
-//       return isForkOfCInt(fType, type);
-//     default:
-//       return false;
-//   }
-// }
+State.prototype.isConsistent = function (state) {
+  var isConsistent = true;
+  this.eachType(function (name, type1) {
+    var type2 = state.get(name);
+    if (!type1.isConsistent(type2))
+      isConsistent = false;
+  });
 
-// function isJoinOfTypes(jType, type1, type2) {
-//   switch(jType.tag) {
-//     case CInt.prototype.tag:
-//       return isJoinOfCInt(jType, type1, type2);
-//     default:
-//       return false;
-//   }
-// }
+  return isConsistent;
+};
 
 
 
-// utility
-function numTypes(state) {
+State.prototype.numTypes = function () {
   var num = 0;
-  state.eachType(function (name, type) {
+  this.eachType(function (name, type) {
     num += 1;
   });
   return num;
-}
+};

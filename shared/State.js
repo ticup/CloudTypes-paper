@@ -45,9 +45,9 @@ State.prototype.join = function (rev) {
   return this;
 };
 
-State.prototype.joinIn = function (rev) {
+State.prototype.joinIn = function (state) {
   this.eachType(function (name, type1) {
-    var type2 = rev.get(name);
+    var type2 = state.get(name);
     type1.joinIn(type2);
   });
   return this;
@@ -62,8 +62,16 @@ State.prototype.fork = function (rev) {
 };
 
 State.prototype.applyFork = function () {
-  var self = this;
   this.eachType(function (name, type) {
     type.applyFork();
   });
+  return this;
+};
+
+State.prototype.replaceBy = function (state) {
+  this.eachType(function (name, type1) {
+    var type2 = state.get(name);
+    type1.replaceBy(type2);
+  });
+  return this;
 };

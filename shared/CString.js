@@ -6,17 +6,17 @@ module.exports = CString;
 function CString(value, written, cond) {
   this.value   = value   || '';
   this.written = written || false;
-  this.cond    = cond    || undefined;
+  this.cond    = cond    || false;
 }
 
 // put CloudType in prototype chain.
-CInt.prototype = Object.create(CloudType.prototype);
-CInt.prototype.tag = "CString";
+CString.prototype = Object.create(CloudType.prototype);
+CString.prototype.tag = "CString";
 
 // register for CloudType.fromJSON 
 CloudType.register(CString);
 CString.fromJSON = function (json) {
-  return new CInt(json.value, json.written, json.cond);
+  return new CString(json.value, json.written, json.cond);
 };
 
 // used by the toJSON method of the CloudType prototype.
@@ -31,7 +31,7 @@ CString.prototype._toJSON = function () {
 // semantic operations
 CString.prototype.set = function (value) {
   this.value   = value;
-  this.written = 'cond';
+  this.written = 'wr';
 };
 
 CString.prototype.get = function () {
@@ -42,7 +42,7 @@ CString.prototype.setIfEmpty = function (value) {
   if (this.written === 'wr' && this.value === '') {
     this.value   = value;
     this.written = 'wr';
-    this.cond    = undefined;
+    this.cond    = false;
 
   } else if (!this.written && this.value === '') {
     this.value   = value;
@@ -63,16 +63,18 @@ CString.prototype.setIfEmpty = function (value) {
 CString.prototype._join = function (cstring, target) {
   if (cstring.written === 'wr') {
     target.written = 'wr';
-    target.value   = CString.value;
-    
+    target.value   = cstring.value;
+    target.cond    = false;
+
   } else if (this.written === 'wr' && this.value === '' && cstring.written === 'cond') {
     target.written = 'wr';
     target.value   = cstring.cond;
+    target.cond    = false;
 
   } else if (!this.written && this.value === '' && cstring.written === 'cond') {
     target.written = 'cond';
     target.cond    = cstring.cond;
-    target.value   = cstring.value;
+    target.value   = cstring.cond;
 
   } else if (!this.written && this.value !== '' && cstring.written === 'cond') {
     target.written = 'cond';
@@ -90,8 +92,14 @@ CString.prototype.fork = function () {
   return new CString(this.value, false, undefined);
 };
 
-CInt.prototype.applyFork = function () {
+CString.prototype.applyFork = function () {
   this.written = false;
-  this.cond    = undefined;
+  this.cond    = false;
   return this;
+};
+
+CString.prototype.replaceBy = function (cstring) {
+  this.written = cstring.written;
+  this.cond    = cstring.cond;
+  this.value   = cstring.value;
 };

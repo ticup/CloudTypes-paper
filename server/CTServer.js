@@ -3,8 +3,8 @@ var ServerState  = require('./ServerState');
 
 module.exports = CTServer;
 
-function CTServer() {
-  this.state  = new ServerState();
+function CTServer(state) {
+  this.state  = state || new ServerState();
   this.server = new Server(this.state);
 }
 
@@ -22,5 +22,5 @@ CTServer.prototype.declare = function (name, ctype) {
 };
 
 CTServer.prototype.get = function (name) {
-  this.state.get(name);
+  return this.state.get(name);
 };

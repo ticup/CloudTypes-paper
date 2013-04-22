@@ -25,6 +25,6 @@ CTClient.prototype.yield = function () {
   return this.state.yield();
 };
 
-CTClient.prototype.flush = function (timeout) {
-  return this.state.flush(timeout);
+CTClient.prototype.flush = function (callback, timeout) {
+  return this.state.flush(callback, timeout);
 };

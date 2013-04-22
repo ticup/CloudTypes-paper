@@ -71,3 +71,9 @@ CInt.prototype.applyFork = function () {
   this.isSet = false;
   return this;
 };
+
+CInt.prototype.replaceBy = function (cint) {
+  this.base   = cint.base;
+  this.offset = cint.offset;
+  this.isSet  = cint.isSet;
+};

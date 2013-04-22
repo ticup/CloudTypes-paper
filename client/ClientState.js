@@ -37,37 +37,29 @@ ClientState.prototype.yield = function () {
   }
   // (A) Not expecting server response, send state to server
   console.log('yield: pushing to server');
-  this.client.yieldPush();
+  this.client.yieldPush(this);
   this.applyFork();
   this.pending  = true;
   this.received = false;
 };
 
-ClientState.prototype.flush = function (timeout) {
-  timeout = timeout || 3000;
-  this.client.flush();
+// callback should take 1 argument that is set if it could not flush with server
+ClientState.prototype.flush = function (callback, timeout) {
+  var self = this;
 
-  // set expiration
-  var expired = false;
-  setTimeout(function () {
-    expired = true;
+  console.log('flush from client');
+  timeout = timeout || 3000;
+  var offline = setTimeout(function () {
+    callback("Flush: cloud not sync on time with server (" + timeout + "ms)");
   }, timeout);
 
-  for (;;) {
-    if (this.received) {
-      console.log('flush: got revision from server');
-      // should actually replace this state,
-      // but since there should be no operations done merging is the same.
-      this.toJoin.joinIn(this);
-      this.received = false;
-      return this;
-    } else if (expired) {
-      throw 'flush: could not contact server in time (' + timeout  + 'ms)';
-    }
-  }
-};
-
-ClientState.prototype.flushPull = function (state) {
-  this.received = true;
-  this.toJoin   = state;
+  this.client.flushPush(this, function flushPull(state) {
+    // should actually replace this state,
+    // but since there should be no operations done merging is the same.
+    console.log('received flushpull on client');
+    self.replaceBy(state);
+    clearTimeout(offline);
+    callback();
+  });
+  return this;
 };

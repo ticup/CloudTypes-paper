@@ -14,7 +14,6 @@ Client.prototype.listen = function (host, callback) {
   var self = this;
   this.socket = io.connect(host);
   this.socket.on('init', function (map) {
-    console.log('initing map: ' + JSON.stringify(map));
     self.state.init(map, self);
     callback();
   });
@@ -24,18 +23,18 @@ Client.prototype.close = function () {
   return this.socket.disconnect();
 };
 
-Client.prototype.yieldPush = function () {
-  var self = this;
-  this.socket.emit('YieldPush', this.state, function yieldPull(map) {
-    var state = State.fromJSON(map);
-    self.state.yieldPull(state);
+Client.prototype.yieldPush = function (pushState) {
+  var state = this.state;
+  this.socket.emit('YieldPush', pushState, function (map) {
+    var pullState = State.fromJSON(map);
+    state.yieldPull(pullState);
   });
 };
 
-Client.prototype.flushPush = function () {
+Client.prototype.flushPush = function (pushState, flushPull) {
   var state = this.state;
-  this.socket.emit('FlushPush', this.state, function flushPull(map) {
-    var state = State.fromJSON(map);
-    self.state.flushPull(state);
+  this.socket.emit('FlushPush', pushState, function (map) {
+    var pullState = State.fromJSON(map);
+    flushPull(pullState);
   });
 };

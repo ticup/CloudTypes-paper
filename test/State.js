@@ -1,7 +1,9 @@
 var State     = require('./extensions/State');
+var CloudType = require('../shared/CloudType');
 var CInt      = require('./extensions/CInt');
 var should    = require('should');
 var stubs     = require('./stubs');
+var util      = require('util');
 
 describe('State', function () {
   describe('#new()', function () {
@@ -15,7 +17,7 @@ describe('State', function () {
   });
 
   describe('#new(map)', function () {
-    var map = {foo: 'bar'};
+    var map   = stubs.unchanged;
     var state = new State(map);
     it('should create a new State object', function () {
       state.should.be.an.instanceOf(State);
@@ -27,96 +29,83 @@ describe('State', function () {
   });
 
   describe('#fromJSON(map)', function () {
-    var cint = new CInt(10);
-    var map = {foo: cint.toJSON(), bar: cint.toJSON()};
-    var state = State.fromJSON(map);
+    var state = State.fromJSON(stubs.unchanged);
     it('should create a new State object', function () {
       state.should.be.an.instanceOf(State);
     });
     it('should have the types in the map', function () {
-      state.map.should.have.property('foo');
-      state.map.should.have.property('bar');
+      Object.keys(stubs.unchanged).forEach(function (name) {
+        state.map.should.have.property(name);
+      });
     });
   });
 
   describe('.toJSON()', function () {
-    var map = {foo: (new CInt(10)).toJSON(), bar: (new CInt(20)).toJSON()};
-    var state = State.fromJSON(map);
-    var map2 = state.toJSON();
+    var state = State.fromJSON(stubs.unchanged);
+    var map   = state.toJSON();
     it('should put the object in JSON representation', function () {
-      map2.should.have.property('foo');
-      map2.foo.toString().should.equal((new CInt(10)).toJSON().toString());
-      map2.should.have.property('bar');
-      map2.bar.toString().should.equal((new CInt(20)).toJSON().toString());
+      Object.keys(stubs.unchanged).forEach(function (name) {
+        map.should.have.property(name);
+        map[name].toString().should.equal(stubs.unchanged[name].toString());
+      });
     });
   });
 
   describe('.get()', function () {
-    var map = {foo: (new CInt(10)).toJSON(), bar: (new CInt(20)).toJSON()};
-    var state = State.fromJSON(map);
+    var state = State.fromJSON(stubs.unchanged);
     it('should return the type with that name', function () {
-      state.get('foo').should.be.an.instanceOf(CInt);
-      state.get('bar').should.be.an.instanceOf(CInt);
-      state.get('foo').get().should.equal(10);
-      state.get('bar').get().should.equal(20);
+      Object.keys(stubs.unchanged).forEach(function (name) {
+        var type = CloudType.fromJSON(stubs.unchanged[name]);
+        state.get(name).toString().should.equal(type.toString());
+      });
     });
   });
 
   describe('.join(state)' ,function () {
-    var map1 = {foo: (new CInt(10)).toJSON(), bar: (new CInt(20)).toJSON()};
-    var cint1 = new CInt();
-    var cint2 = new CInt();
-    cint1.set(1);
-    cint2.set(2);
-    var map2 = {foo: cint1.toJSON(), bar: cint2.toJSON()};
-    var state1 = State.fromJSON(map1);
-    var state2 = State.fromJSON(map2);
-    var jState = State.fromJSON(map1);
+    var state1 = State.fromJSON(stubs.unchanged);
+    var state2 = State.fromJSON(stubs.changed);
+    var jState = State.fromJSON(stubs.unchanged);
     jState.join(state2);
-
-
     it('should join the given state into its own state, result in own state', function () {
-      jState.isJoinOf(state1, state2).should.equal(true);
+      jState.isJoinOf(state1, state2);
     });
   });
 
   describe('.joinIn(state)', function () {
-    var map1 = {foo: (new CInt(10)).toJSON(), bar: (new CInt(20)).toJSON()};
-    var cint = new CInt();
-    cint.set(1);
-    var map2 = {foo: cint.toJSON(), bar: (new CInt(2)).toJSON()};
-    var state1 = State.fromJSON(map1);
-    var state2 = State.fromJSON(map2);
-    var jState = State.fromJSON(map2);
+    var state1 = State.fromJSON(stubs.changed);
+    var state2 = State.fromJSON(stubs.unchanged);
+    var jState = State.fromJSON(stubs.unchanged);
     state1.joinIn(jState);
-
     it('should join the given state into its own state, result in the other state', function () {
-      jState.isJoinOf(state1, state2).should.equal(true);
+      jState.isJoinOf(state2, state1);
     });
   });
 
   describe('.fork()', function () {
-    var cint1 = new CInt();
-    var cint2 = new CInt();
-    cint1.set(1);
-    cint2.add(2);
-    var map = {foo: cint1.toJSON(), bar: cint2.toJSON()};
-    var state = State.fromJSON(map);
-    var fork = state.fork();
-
+    var state = State.fromJSON(stubs.changed);
+    var fork  = state.fork();
     it('should create a new State', function () {
       fork.should.be.instanceOf(State);
       fork.should.not.be.equal(state);
     });
 
     it('should return a forked state of given state', function () {
-      fork.isForkOf(state).should.equal(true);
+      fork.isForkOf(state);
     });
 
     it('should return initial state from initial state', function () {
-      var initState = State.fromJSON(stubs.unchanged);
-      var f = initState.fork();
-      initState.isEqual(f);
+      state = State.fromJSON(stubs.unchanged);
+      fork  = state.fork();
+      state.isEqual(fork);
+    });
+  });
+
+  describe('.applyFork()', function () {
+    var state = State.fromJSON(stubs.unchanged);
+    var fork  = State.fromJSON(stubs.unchanged);
+    fork.applyFork();
+    it('should return a forked state of given state', function () {
+      fork.isForkOf(state);
     });
   });
 

@@ -28,8 +28,10 @@ Server.prototype.open = function (target) {
     });
 
     socket.on('FlushPush', function (map, flushPull) {
+      console.log('received FlushPush on server: ' + util.inspect(map));
       var state = State.fromJSON(map);
       self.state.join(state);
+      console.log(flushPull);
       flushPull(self.state.fork());
     });
   });

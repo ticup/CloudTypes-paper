@@ -3,5 +3,6 @@
 var main = require('../../client/main');
 
 // extend CloudTypes with test functionalities
-exports.CInt  = require('../extensions/CInt');
-exports.State = require('../extensions/State');
+exports.CInt     = require('../extensions/CInt');
+exports.CString  = require('../extensions/CString');
+exports.State    = require('../extensions/State');

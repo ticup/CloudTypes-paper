@@ -14,6 +14,6 @@
   },
   "optionalDependencies": {},
   "scripts": {
-    "test": "make test-all"
+    "test": "node_modules/.bin/mocha"
   }
 }

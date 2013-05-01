@@ -1,8 +1,8 @@
-var CTServer = require ('./CTServer');
+var CServer = require ('./CServer');
 
 
 exports.createServer = function () {
-  return new CTServer();
+  return new CServer();
 };
 
 exports.CInt = require('../shared/CInt');

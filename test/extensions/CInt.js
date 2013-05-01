@@ -9,28 +9,11 @@ module.exports = CInt;
 
 
 // Type specific semantics
-// CInt.prototype.isForkOf = function (type) {
-//   return ((this.base   === type.base + type.offset) &&
-//           (this.isSet  === false) &&
-//           (this.offset === 0));
-// };
-
 CInt.prototype.isForkOf = function (type) {
   this.base.should.equal(type.base + type.offset);
   this.isSet.should.equal(false);
   this.offset.should.equal(0);
 };
-
-// CInt.prototype.isJoinOf = function (type1, type2) {
-//   if (type2.isSet) {
-//     return ((this.isSet  === true) &&
-//             (this.base   === type2.base) &&
-//             (this.offset === type2.offset));
-//   }
-//   return ((this.isSet  === type1.isSet) &&
-//           (this.base   === type1.base) &&
-//           (this.offset === type1.offset + type2.offset));
-// };
 
 CInt.prototype.isJoinOf = function (type1, type2) {
   if (type2.isSet) {

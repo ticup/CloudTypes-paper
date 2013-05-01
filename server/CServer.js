@@ -1,26 +1,26 @@
 var Server = require('./Server');
 var ServerState  = require('./ServerState');
 
-module.exports = CTServer;
+module.exports = CServer;
 
-function CTServer(state) {
+function CServer(state) {
   this.state  = state || new ServerState();
   this.server = new Server(this.state);
 }
 
-CTServer.prototype.publish = function (target) {
+CServer.prototype.publish = function (target) {
   this.server.open(target);
   this.state.published(this.server);
 };
 
-CTServer.prototype.close = function () {
+CServer.prototype.close = function () {
   this.server.close();
 };
 
-CTServer.prototype.declare = function (name, ctype) {
+CServer.prototype.declare = function (name, ctype) {
   this.state.declare(name, ctype);
 };
 
-CTServer.prototype.get = function (name) {
+CServer.prototype.get = function (name) {
   return this.state.get(name);
 };

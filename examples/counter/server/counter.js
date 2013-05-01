@@ -1,5 +1,8 @@
 var CloudTypes = require('../../../server/main.js');
-var http = require('http');
+var CInt       = CloudTypes.CInt;
+var CString    = CloudTypes.CString;
+
+var http  = require('http');
 var static = require('node-static');
 
 // create static server for public files
@@ -13,6 +16,6 @@ var app = http.createServer(function (req, res) {
 app.listen(8090);
 
 // Cloud Types
-var cts = CloudTypes.createServer();
-cts.declare('counter', new CloudTypes.CInt());
-cts.publish(app);
+var cloudTypes = CloudTypes.createServer();
+cloudTypes.declare('counter', CloudTypes.CInt);
+cloudTypes.publish(8090);

@@ -3,6 +3,8 @@ CloudType.js
 
 CloudType.js is a JavaScript library implementation of the CloudTypes demonstrated in the paper [CloudTypes for Eventual Consistency](http://research.microsoft.com/apps/pubs/default.aspx?id=163842) by Sebastian Burckhardt, Manuel Fahndrich, Daan Leijen, and Benjamin P. Wood.
 
+[![Build Status](https://travis-ci.org/ticup/CloudType.js.png)](https://travis-ci.org/ticup/CloudType.js)
+
 CloudTypes
 ----------
 

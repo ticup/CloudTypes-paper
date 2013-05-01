@@ -102,6 +102,13 @@ note: you will also need an http server to serve your file, check out the counte
     node examples/server/counter
 
 
+Getting Started
+---------------
+As mentioned before, this library will be available on npm when finished, but for now one can also easily get it by using git:
+    > git clone https://github.com/ticup/CloudType.js.git
+    > cd CloudType.js
+    > npm install
+    
 API
 ---
 In addition to the API described in the paper, this library also requires some client/server boilerplate setup code:

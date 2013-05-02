@@ -8,12 +8,12 @@ CloudType.js is a JavaScript library implementation of the CloudTypes demonstrat
 CloudTypes
 ----------
 
-In short, CloudTypes provide language level abstractions for synchronization of distributed variables (Integer, String, Array and Entities).
+In short, CloudTypes provide language level abstractions for synchronization of distributed variables (Integer, String and Sets).
 
 Somewhat more extensive, CloudTypes provide:
 
-1. **Distributed variables:** CInt, CString, Array and Entity.
-These variables can be used across different clients and server, even when the system in question is offline for days, months or years.
+1. **Distributed variables:** CInt, CString and CSet.
+These variables can be used across different clients and servers, even when the system in question is offline for days, months or years.
 
 2. **Eventual consistency** for those variables.
 All systems have their own revision of the state which they can use to locally update or query CloudTypes from. These states are synchronized using the *yield* (asynchronous) or *flush* (synchronous) operations. 
@@ -85,14 +85,11 @@ Load the CloudTypes client bundle into your html and start using the distributed
           // retrieve the counter CloudType variable
           var counter = state.get('counter');
 
-          // setup constant synchronization
-          setTimeout(function () {
-            state.yield();
-          }, 1000);
-
           // use the types while being eventually consistent with the server
           counter.set(1);
           counter.add(10);
+
+          state.yield();
         }
       </script>
     </html>
@@ -105,9 +102,19 @@ note: you will also need an http server to serve your file, check out the counte
 Getting Started
 ---------------
 As mentioned before, this library will be available on npm when finished, but for now one can also easily get it by using git (assuming you have git and npm installed):
-    > git clone https://github.com/ticup/CloudType.js.git
-    > cd CloudType.js
-    > npm install
+
+Clone the repository using git
+
+    git clone https://github.com/ticup/CloudType.js.git
+
+Go into the newly created directory
+
+    cd CloudType.js
+
+Install the dependencies using npm
+
+    npm install
+
 
 API
 ---
@@ -254,12 +261,17 @@ This section keeps track of the state of this library.
 
 ### What is currently worked on:
 
-* Array and Entity implementation of a cloud type.
+* CSet cloud type implementation.
 
 ### What will be added later:
 
 * Non-trivial applications that explore CloudTypes its boundaries in JavaScript: Grocery and Reservation applications from the paper.
 * Non-trivial applications that explore CloudTypes its boundaries in general: Eventing managing application.
+
+### What will be explored in other forks:
+
+* Explore ways of partitioning the revision so that clients must store only part of the entire revision, enabling CloudTypes to scale to larger systems.
+* Triggering events when cloud types change, enabling UI's to respond to changes in the environment.
 
 
 

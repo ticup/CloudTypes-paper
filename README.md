@@ -85,7 +85,7 @@ Load the CloudTypes client bundle into your html and start using the distributed
           // retrieve the counter CloudType variable
           var counter = state.get('counter');
 
-          // use the types while being eventually consistent with the server
+          // start using the cloudtypes environment
           counter.set(1);
           counter.add(10);
 

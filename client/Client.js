@@ -1,21 +1,26 @@
-var State = require('../shared/State');
+var State       = require('../shared/State');
 var ClientState = require('./ClientState');
-var io = require('socket.io-client');
+var io          = require('socket.io-client');
 
 global.io = io;
 
 module.exports = Client;
 
-function Client(state) {
-  this.state = state;
+function Client() {
 }
 
-Client.prototype.listen = function (host, callback) {
+Client.prototype.connect = function (host, options, callback) {
   var self = this;
-  this.socket = io.connect(host);
-  this.socket.on('init', function (map) {
-    self.state.init(map, self);
-    callback();
+  if (typeof callback === 'undefined') {
+    callback = options;
+    options  = null;
+  }
+  this.socket = io.connect(host, options);
+  this.socket.on('init', function (json) {
+
+    self.state = State.fromJSON(json.state);
+    self.state.init(json.cid, self);
+    callback(self.state);
   });
 };
 
@@ -25,16 +30,16 @@ Client.prototype.close = function () {
 
 Client.prototype.yieldPush = function (pushState) {
   var state = this.state;
-  this.socket.emit('YieldPush', pushState, function (map) {
-    var pullState = State.fromJSON(map);
+  this.socket.emit('YieldPush', pushState, function (stateJson) {
+    var pullState = State.fromJSON(stateJson);
     state.yieldPull(pullState);
   });
 };
 
 Client.prototype.flushPush = function (pushState, flushPull) {
   var state = this.state;
-  this.socket.emit('FlushPush', pushState, function (map) {
-    var pullState = State.fromJSON(map);
+  this.socket.emit('FlushPush', pushState, function (stateJson) {
+    var pullState = State.fromJSON(stateJson);
     flushPull(pullState);
   });
 };

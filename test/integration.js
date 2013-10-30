@@ -22,7 +22,7 @@ var port = 8090;
 function createHttpServer(port) {
   // http server
   var app = http.createServer(function (req, res) {
-    if (req.url == '/bundle.js') {
+    if (req.url === '/bundle.js') {
       res.writeHead(200, {'Content-Type': 'text/javascript'});
       res.end(bundle);
     } else {

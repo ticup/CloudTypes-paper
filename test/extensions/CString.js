@@ -24,7 +24,6 @@ CString.prototype.isForkOf = function (cstring) {
 
 
 CString.prototype.isJoinOf = function (type1, type2) {
-  console.log(util.inspect(this));
   if (type2.written === 'wr') {
     this.written.should.equal('wr');
     this.value.should.equal(type2.value);
@@ -53,5 +52,6 @@ CString.prototype.isJoinOf = function (type1, type2) {
 };
 
 CString.prototype.isConsistent = function (cint) {
+  console.log(this.get() + " =? " + cint.get());
   this.get().should.equal(cint.get());
 };

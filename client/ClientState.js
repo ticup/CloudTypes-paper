@@ -1,28 +1,30 @@
 var State = require('../shared/State');
 
-module.exports = ClientState;
+module.exports = State;
 
-function ClientState() {
-  State.call(this);
+
+State.prototype.init = function (cid, client) {
+  console.log("INITING WITH: " + cid);
   this.pending  = false;
   this.received = false;
-}
-
-// State in prototype chain
-ClientState.prototype = Object.create(State.prototype);
-
-ClientState.prototype.init = function (map, client) {
-  this.map    = State.fromJSON(map).map;
-  this.client = client;
+  this.cid      = cid;
+  this.uid      = 0;
+  this.client   = client;
 };
 
-ClientState.prototype.yieldPull = function (state) {
+State.prototype.createUID = function (uid) {
+  var id = this.cid + "#" + uid;
+  console.log("CREATING NEW ENTITY:" + id);
+  return id;
+}
+
+State.prototype.yieldPull = function (state) {
   this.pending  = false;
   this.received = true;
   this.toJoin   = state;
 };
 
-ClientState.prototype.yield = function () {
+State.prototype.yield = function () {
   // (B) Revision from the server arrived, merge
   if (this.received) {
     console.log('yield: got revision from server');
@@ -44,22 +46,25 @@ ClientState.prototype.yield = function () {
 };
 
 // callback should take 1 argument that is set if it could not flush with server
-ClientState.prototype.flush = function (callback, timeout) {
+State.prototype.flush = function (callback, timeout) {
   var self = this;
 
-  console.log('flush from client');
   timeout = timeout || 3000;
   var offline = setTimeout(function () {
-    callback("Flush: cloud not sync on time with server (" + timeout + "ms)");
+    callback("Flush: could not sync on time with server (" + timeout + "ms)");
   }, timeout);
 
   this.client.flushPush(this, function flushPull(state) {
     // should actually replace this state,
     // but since there should be no operations done merging is the same.
+    self.print();
     console.log('received flushpull on client');
-    self.replaceBy(state);
+
+    state.joinIn(self);
+
     clearTimeout(offline);
     callback();
   });
+  self.applyFork();
   return this;
 };

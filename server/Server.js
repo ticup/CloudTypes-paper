@@ -9,6 +9,7 @@ function Server(state) {
 
 Server.prototype.open = function (target) {
   var self = this;
+  var cid  = 0;
   // target: port or http server
   // default = port 8090
   target = target || 8090;
@@ -19,20 +20,23 @@ Server.prototype.open = function (target) {
 
   // set up listeners
   io.sockets.on('connection', function (socket) {
-    socket.emit('init', self.state.fork());
+    console.log("server deteced connection");
+    socket.emit('init', { cid: cid++, state: self.state.fork() });
 
-    socket.on('YieldPush', function (map, yieldPull) {
-      var state = State.fromJSON(map);
+    socket.on('YieldPush', function (stateJson, yieldPull) {
+      console.log('received YieldPush on server: ' + util.inspect(stateJson));
+      var state = State.fromJSON(stateJson);
+      self.state.print();
       self.state.join(state);
       yieldPull(self.state.fork());
     });
 
-    socket.on('FlushPush', function (map, flushPull) {
-      console.log('received FlushPush on server: ' + util.inspect(map));
-      var state = State.fromJSON(map);
+    socket.on('FlushPush', function (stateJson, flushPull) {
+      console.log('received FlushPush on server: ' + util.inspect(stateJson));
+      var state = State.fromJSON(stateJson);
       self.state.join(state);
-      console.log(flushPull);
-      flushPull(self.state.fork());
+      var fork = self.state.fork();
+      flushPull(fork);
     });
   });
 };

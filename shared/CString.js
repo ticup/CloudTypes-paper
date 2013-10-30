@@ -89,7 +89,9 @@ CString.prototype._join = function (cstring, target) {
 };
 
 CString.prototype.fork = function () {
-  return new CString(this.value, false, undefined);
+  var cstring = new CString(this.value, false, undefined);
+  this.applyFork();
+  return cstring;
 };
 
 CString.prototype.applyFork = function () {
@@ -102,4 +104,8 @@ CString.prototype.replaceBy = function (cstring) {
   this.written = cstring.written;
   this.cond    = cstring.cond;
   this.value   = cstring.value;
+};
+
+CString.prototype.isDefault = function () {
+  return (this.get() === '');
 };

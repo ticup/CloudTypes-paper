@@ -3,6 +3,8 @@ var should = require('should');
 
 module.exports = State;
 
+var OK = 'ok';
+var DELETED = 'deleted';
 // State.prototype.isForkOf = function (state) {
 //   var fState = this;
 //   var isFork = true;
@@ -42,57 +44,68 @@ module.exports = State;
 //   return isJoin;
 // };
 
-State.prototype.isForkOf = function (state) {
-  var fState = this;
-  // each type in state should have an equivalent forked type in fState
-  state.eachType(function (name, type) {
-    var fType = fState.get(name);
-    should.exist(fType);
-    fType.isForkOf(type);
+State.prototype.forPairs = function (state2, callback) {
+  var state1 = this;
+  state1.forEachProperty(function (property) {
+    property.forEachIndex(function (index) {
+      var type1 = property.get(index);
+      var type2 = state2.getProperty(property).get(index);
+      should.exist(type2);
+      callback(type1, type2);
+    });
   });
+};
 
-  state.numTypes().should.equal(fState.numTypes());
+State.prototype.isForkOf = function (state) {
+  this.forPairs(state, function (forked, forker) {
+    forked.isForkOf(forker);
+  });
 };
 
 State.prototype.isJoinOf = function (state1, state2) {
-  this.eachType(function (name, jType) {
-    var type1 = state1.get(name);
-    var type2 = state2.get(name);
-    should.exist(type1);
-    should.exist(type2);
-
-    jType.isJoinOf(type1, type2);
+  var self = this;
+  this.forEachProperty(function (property) {
+    property.forEachIndex(function (index) {
+      var jType = property.get(index);
+      var type1 = state1.getProperty(property).get(index);
+      var type2 = state2.getProperty(property).get(index);
+      should.exist(type1);
+      should.exist(type2);
+      jType.isJoinOf(type1, type2);
+    });
   });
-
-  state2.numTypes().should.equal(state2.numTypes());
-
-  this.numTypes().should.equal(state1.numTypes());
+  this.forEachEntity(function (entity) {
+    entity.forEachState(function (index) {
+      var val  = entity.states[index];
+      var val1 = state1.get(entity.name).states[index];
+      var val2 = state2.get(entity.name).states[index];
+      if (val1 === DELETED || val2 === DELETED)
+        self.get(entity.name).states[index].should.equal(DELETED);
+      if (val1 === OK || val2 === OK)
+        self.get(entity.name).states[index].should.equal(OK);
+    });
+  });
 };
 
 State.prototype.isEqual = function (state) {
-  this.eachType(function (name, type1) {
-    var type2 = state.get(name);
-    should.exist(type2);
+  this.forPairs(state, function (type1, type2) {
     type1.isEqual(type2);
   });
-
-  this.numTypes().should.equal(state.numTypes());
+  this.forEachEntity(function (entity) {
+    entity.states.should.eql(state.get(entity.name).states);
+  });
 };
 
 State.prototype.isConsistent = function (state) {
-  this.eachType(function (name, type1) {
-    var type2 = state.get(name);
-    should.exist(type2);
+  this.forPairs(state, function (type1, type2) {
     type1.isConsistent(type2);
   });
-};
-
-
-
-State.prototype.numTypes = function () {
-  var num = 0;
-  this.eachType(function (name, type) {
-    num += 1;
+  this.forEachEntity(function (entity) {
+      console.log(require('util').inspect(entity.states) + " consistent? " + require('util').inspect(state.get(entity.name).states));
+    entity.forEachState(function (index) {
+      console.log('index: ' + index);
+      console.log(entity.states[index] + " ?= " + state.get(entity.name).states[index]);
+      entity.states[index].should.equal(state.get(entity.name).states[index]);
+    });
   });
-  return num;
 };

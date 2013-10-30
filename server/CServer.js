@@ -1,10 +1,10 @@
 var Server = require('./Server');
-var ServerState  = require('./ServerState');
+var State  = require('./State');
 
 module.exports = CServer;
 
 function CServer(state) {
-  this.state  = state || new ServerState();
+  this.state  = state || new State();
   this.server = new Server(this.state);
 }
 
@@ -17,8 +17,8 @@ CServer.prototype.close = function () {
   this.server.close();
 };
 
-CServer.prototype.declare = function (name, ctype) {
-  this.state.declare(name, ctype);
+CServer.prototype.declare = function (array) {
+  this.state.declare(array);
 };
 
 CServer.prototype.get = function (name) {

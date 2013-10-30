@@ -1,45 +1,47 @@
-;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-(function(global){var CClient = require ('./CClient');
+;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State = require('../shared/State');
+var ClientState = require('./ClientState');
+var io = require('socket.io-client');
 
-var CloudTypes = {};
-global.CloudTypes = CloudTypes;
+global.io = io;
 
-CloudTypes.createClient = function () {
-  return new CClient();
-};
-})(window)
-},{"./CClient":2}],2:[function(require,module,exports){
-var Client = require('./Client');
-var ClientState  = require('./ClientState');
+module.exports = Client;
 
-module.exports = CClient;
-
-function CClient() {
-  this.state  = new ClientState();
-  this.client = new Client(this.state);
+function Client(state) {
+  this.state = state;
 }
 
-CClient.prototype.listen = function (host, callback) {
-  return this.client.listen(host, callback);
+Client.prototype.connect = function (host, options, callback) {
+  var self = this;
+  options  = (typeof options === 'function') ? null    : options;
+  callback = (typeof options === 'function') ? options : callback;
+  this.socket = io.connect(host, options);
+  this.socket.on('init', function (map) {
+    self.state.init(map, self);
+    callback();
+  });
 };
 
-CClient.prototype.close = function () {
-  return this.client.close();
+Client.prototype.close = function () {
+  return this.socket.disconnect();
 };
 
-CClient.prototype.get = function (name) {
-  return this.state.get(name);
+Client.prototype.yieldPush = function (pushState) {
+  var state = this.state;
+  this.socket.emit('YieldPush', pushState, function (map) {
+    var pullState = State.fromJSON(map);
+    state.yieldPull(pullState);
+  });
 };
 
-
-CClient.prototype.yield = function () {
-  return this.state.yield();
+Client.prototype.flushPush = function (pushState, flushPull) {
+  var state = this.state;
+  this.socket.emit('FlushPush', pushState, function (map) {
+    var pullState = State.fromJSON(map);
+    flushPull(pullState);
+  });
 };
-
-CClient.prototype.flush = function (callback, timeout) {
-  return this.state.flush(callback, timeout);
-};
-},{"./Client":3,"./ClientState":4}],4:[function(require,module,exports){
+},{"../shared/State":11,"./ClientState":2,"socket.io-client":5}],2:[function(require,module,exports){
 var State = require('../shared/State');
 
 module.exports = ClientState;
@@ -105,158 +107,50 @@ ClientState.prototype.flush = function (callback, timeout) {
   });
   return this;
 };
-},{"../shared/State":5}],5:[function(require,module,exports){
-var CloudType = require('./CloudType');
+},{"../shared/State":11}],3:[function(require,module,exports){
+var Client = require('./Client');
+var ClientState  = require('./ClientState');
 
-module.exports = State;
+module.exports = CClient;
 
-function State(map) {
-  this.map = map || {};
+function CClient() {
+  this.state  = new ClientState();
+  this.client = new Client(this.state);
 }
 
-State.fromJSON = function (json) {
-  var map = {};
-  Object.keys(json).forEach(function (name) {
-    map[name] = CloudType.fromJSON(json[name]);
-  });
-  return new State(map);
+CClient.prototype.connect = function (host, options, callback) {
+  return this.client.connect(host, options, callback);
 };
 
-State.prototype.toJSON = function () {
-  var map = this.map;
-  var json = {};
-  Object.keys(map).forEach(function (name) {
-    json[name] = map[name].toJSON();
-  });
-  return json;
+CClient.prototype.close = function () {
+  return this.client.close();
+};
+
+CClient.prototype.get = function (name) {
+  return this.state.get(name);
 };
 
 
-State.prototype.get = function (name) {
-  return this.map[name];
+CClient.prototype.yield = function () {
+  return this.state.yield();
 };
 
-State.prototype.eachType = function (callback) {
-  var keys = Object.keys(this.map);
-  var len = keys.length;
+CClient.prototype.flush = function (callback, timeout) {
+  return this.state.flush(callback, timeout);
+};
+},{"./Client":1,"./ClientState":2}],4:[function(require,module,exports){
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypesClient = require ('./CloudTypesClient');
 
-  for (var i = 0; i < len; i++) {
-    callback(keys[i], this.map[keys[i]]);
-  }
+var CloudTypes = {};
+global.CloudTypes = CloudTypes;
+
+CloudTypes.createClient = function () {
+  return new CloudTypesClient();
 };
 
-State.prototype.join = function (rev) {
-  this.eachType(function (name, type1) {
-    var type2 = rev.get(name);
-    type1.join(type2);
-  });
-  return this;
-};
-
-State.prototype.joinIn = function (state) {
-  this.eachType(function (name, type1) {
-    var type2 = state.get(name);
-    type1.joinIn(type2);
-  });
-  return this;
-};
-
-State.prototype.fork = function (rev) {
-  var map = {};
-  this.eachType(function (name, type) {
-    map[name] = type.fork();
-  });
-  return new State(map);
-};
-
-State.prototype.applyFork = function () {
-  this.eachType(function (name, type) {
-    type.applyFork();
-  });
-  return this;
-};
-
-State.prototype.replaceBy = function (state) {
-  this.eachType(function (name, type1) {
-    var type2 = state.get(name);
-    type1.replaceBy(type2);
-  });
-  return this;
-};
-
-},{"./CloudType":6}],3:[function(require,module,exports){
-(function(global){var State = require('../shared/State');
-var ClientState = require('./ClientState');
-var io = require('socket.io-client');
-
-global.io = io;
-
-module.exports = Client;
-
-function Client(state) {
-  this.state = state;
-}
-
-Client.prototype.listen = function (host, callback) {
-  var self = this;
-  this.socket = io.connect(host);
-  this.socket.on('init', function (map) {
-    self.state.init(map, self);
-    callback();
-  });
-};
-
-Client.prototype.close = function () {
-  return this.socket.disconnect();
-};
-
-Client.prototype.yieldPush = function (pushState) {
-  var state = this.state;
-  this.socket.emit('YieldPush', pushState, function (map) {
-    var pullState = State.fromJSON(map);
-    state.yieldPull(pullState);
-  });
-};
-
-Client.prototype.flushPush = function (pushState, flushPull) {
-  var state = this.state;
-  this.socket.emit('FlushPush', pushState, function (map) {
-    var pullState = State.fromJSON(map);
-    flushPull(pullState);
-  });
-};
-})(window)
-},{"../shared/State":5,"./ClientState":4,"socket.io-client":7}],6:[function(require,module,exports){
-module.exports = CloudType;
-
-function CloudType() {}
-
-CloudType.types = {};
-
-CloudType.register = function (type) {
-  this.types[type.prototype.tag] = type;
-};
-
-CloudType.fromJSON = function (json) {
-  return this.types[json.type].fromJSON(json.info);
-};
-
-CloudType.prototype.toJSON = function () {
-  return {
-    type: this.tag,
-    info: this._toJSON()
-  };
-};
-
-CloudType.prototype.join = function (cint) {
-  this._join(cint, this);
-};
-
-CloudType.prototype.joinIn = function (cint) {
-  this._join(cint, cint);
-};
-},{}],7:[function(require,module,exports){
-(function(){/*! Socket.IO.js build:0.9.11, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
+module.exports = CloudTypes;
+},{"./CloudTypesClient":3}],5:[function(require,module,exports){
+/*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
 (function() {
@@ -283,7 +177,7 @@ var io = ('undefined' === typeof module ? {} : module.exports);
    * @api public
    */
 
-  io.version = '0.9.11';
+  io.version = '0.9.16';
 
   /**
    * Protocol implemented.
@@ -3605,6 +3499,8 @@ var swfobject=function(){var D="undefined",r="object",S="Shockwave Flash",W="Sho
    */
 
   HTMLFile.prototype._ = function (data, doc) {
+    // unescape all forward slashes. see GH-1251
+    data = data.replace(/\\\//g, '/');
     this.onData(data);
     try {
       var script = doc.getElementsByTagName('script')[0];
@@ -4127,6 +4023,1108 @@ if (typeof define === "function" && define.amd) {
   define([], function () { return io; });
 }
 })();
-})()
-},{}]},{},[1])
+},{}],6:[function(require,module,exports){
+var CloudType   = require('./CloudType');
+var Indexes     = require('./Indexes');
+var Property    = require('./Property');
+var Properties  = require('./Properties');
+var util = require('util');
+
+module.exports = CArray;
+
+// indexNames:  { string: IndexType }
+// todo: create copy of initializers
+function CArray(name, indexes, properties) {
+  this.name       = name;
+  this.indexes    = (indexes instanceof Indexes) ? indexes : new Indexes(indexes);
+  this.properties = properties || new Properties();
+}
+
+// properties: { string: string {"int", "string"} }
+CArray.declare = function (name, indexNames, propertyDeclarations) {
+  var carray = new CArray(name, indexNames);
+  Object.keys(propertyDeclarations).forEach(function (propName) {
+    var cTypeName = propertyDeclarations[propName];
+    carray.addProperty(new Property(propName, cTypeName, carray.indexes));
+  });
+  return carray;
+};
+
+CArray.prototype.forEachProperty = function (callback) {
+  return this.properties.forEach(callback);
+};
+
+CArray.prototype.getProperty = function (property) {
+  return this.properties.get(property);
+};
+
+CArray.prototype.addProperty = function (property) {
+  return this.properties.add(property);
+};
+
+CArray.prototype.fork = function () {
+  var fIndexes = this.indexes.fork();
+  var fProperties = this.properties.fork(fIndexes);
+  var cArray = new CArray(this.name, fIndexes, fProperties);
+  return cArray;
+};
+
+
+CArray.prototype.toJSON = function () {
+  return {
+    name        : this.name,
+    indexes     : this.indexes.toJSON(),
+    properties  : this.properties.toJSON()
+  };
+};
+
+CArray.fromJSON = function (json) {
+  var cArray = new CArray(json.name, json.indexNames);
+  cArray.indexes = Indexes.fromJSON(json.indexes);
+  cArray.properties = Properties.fromJSON(json.properties, json.name, cArray.indexes);
+  return cArray;
+};
+},{"./CloudType":7,"./Indexes":8,"./Properties":9,"./Property":10,"util":13}],7:[function(require,module,exports){
+module.exports = CloudType;
+
+function CloudType() {}
+
+CloudType.types = {};
+
+CloudType.register = function (type) {
+  CloudType.types[type.prototype.tag] = type;
+};
+
+CloudType.fromTag = function (tag) {
+  return CloudType.types[tag];
+};
+
+CloudType.fromJSON = function (json) {
+  return CloudType.types[json.type].fromJSON(json.info);
+};
+
+CloudType.prototype.toJSON = function () {
+  return {
+    type: this.tag,
+    info: this._toJSON()
+  };
+};
+
+CloudType.prototype.join = function (cint) {
+  this._join(cint, this);
+};
+
+CloudType.prototype.joinIn = function (cint) {
+  this._join(cint, cint);
+};
+},{}],8:[function(require,module,exports){
+function Indexes(names, accessed) {
+  this.names    = names;
+  this.accessed = accessed || {};
+}
+
+Indexes.prototype.forEach = function (callback) {
+  return Object.keys(this.accessed).forEach(function (index) {
+    callback(index);
+  });
+}
+
+Indexes.prototype.get = function (indexes) {
+  var index = createIndex(indexes);
+  var accessed = this.accessed[index];
+  if (!accessed)
+    this.accessed[index] = true;
+  return index;
+};
+
+function createIndex(indexes) {
+  if (typeof indexes === 'string')
+    return indexes;
+  return indexes.join(".");
+}
+
+Indexes.prototype.toJSON = function () {
+  return {
+    names: this.names
+  };
+};
+
+Indexes.fromJSON = function (json) {
+  return new Indexes(json.names);
+};
+
+// names can be shared, because it's supposed to be immutable, accessed not.
+Indexes.prototype.fork = function () {
+  var accessed = {};
+  Object.keys(this.accessed).forEach(function (index) {
+    accessed[index] = true;
+  });
+  return new Indexes(this.names, accessed);
+};
+
+module.exports = Indexes;
+},{}],9:[function(require,module,exports){
+var Property = require('./Property');
+
+function Properties(properties) {
+  this.properties = properties || {};
+}
+
+Properties.prototype.get = function (property) {
+  if (typeof property === 'string')
+    return this.properties[property];
+  return this.properties[property.name];
+};
+
+Properties.prototype.add = function (property) {
+  return this.properties[property.name] = property;
+};
+
+Properties.prototype.forEach = function (callback) {
+  var self = this;
+  return Object.keys(self.properties).forEach(function (name) {
+    callback(self.properties[name]);
+  });
+};
+
+Properties.prototype.toJSON = function () {
+  var self = this;
+  return Object.keys(this.properties).map(function (propName) {
+    return self.properties[propName].toJSON();
+  });
+};
+
+Properties.fromJSON = function (json, cArrayName, indexes) {
+  var properties = {};
+  json.forEach(function (propertyJson) {
+    properties[propertyJson.name] = Property.fromJSON(propertyJson, cArrayName, indexes);
+  });
+  return new Properties(properties);
+};
+
+Properties.prototype.fork = function (fIndexes) {
+  var fProperties = new Properties();
+  this.forEach(function (property) {
+    fProperties.add(property.fork(fIndexes));
+  });
+  return fProperties;
+};
+
+module.exports = Properties;
+},{"./Property":10}],10:[function(require,module,exports){
+var CloudType = require('./CloudType');
+
+function Property(name, ctypeName, cArrayName, indexes, values) {
+  this.name = name;
+  this.indexes = indexes;
+  this.cArrayName = cArrayName;
+  this.ctypeName = ctypeName;
+  this.values = values || {};
+}
+
+Property.prototype.forEachIndex = function (callback) {
+  return Object.keys(this.values).forEach(callback);
+};
+
+Property.prototype.get = function (indexes) {
+  var index = this.indexes.get(indexes);
+  var ctype = this.values[index];
+  if (typeof ctype === 'undefined') {
+    ctype = this.values[index] = new (CloudType.fromTag(this.ctypeName))();
+  }
+  return ctype;
+};
+
+Property.prototype.toJSON = function () {
+  var self = this;
+  var values = {};
+  Object.keys(self.values).forEach(function (index) {
+    values[index] = self.values[index].toJSON();
+  });
+  return { name: this.name, type: this.ctypeName, values: values };
+};
+
+Property.fromJSON = function (json, cArrayName, indexes) {
+  var values = {};
+  Object.keys(json.values).forEach(function (index) {
+    values[index] = CloudType.fromJSON(json.values[index]);
+  });
+  return new Property(json.name, json.type, cArrayName, indexes, values);
+};
+
+Property.prototype.fork = function (fIndexes) {
+  var self = this;
+  var fProperty = new Property(this.name, this.ctypeName, this.cArrayName, fIndexes);
+  Object.keys(self.values).forEach(function (index) {
+    fProperty.values[index] = self.values[index].fork();
+  });
+  return fProperty;
+};
+
+module.exports = Property;
+},{"./CloudType":7}],11:[function(require,module,exports){
+var CloudType = require('./CloudType');
+var CArray    = require('./CArray');
+
+module.exports = State;
+
+function State(arrays) {
+  this.arrays = arrays || {};
+}
+
+
+/* User API */
+State.prototype.operation = function (name, indexes, propertyName, op) {
+  return op.apply(this.arrays[name].getProperty(propertyName).get(indexes), [].slice.call(arguments, 4))
+};
+
+State.prototype.declare = function (array) {
+  return this.arrays[array.name] = array;
+};
+
+/* Private */
+State.prototype.toJSON = function () {
+  var self = this;
+  return {
+    arrays: Object.keys(self.arrays).map(function (name) {
+      return self.arrays[name].toJSON();
+    })
+  };
+};
+
+State.fromJSON = function (json) {
+  var arrays = {};
+  json.arrays.forEach(function (cArrayJson) {
+    var array = CArray.fromJSON(cArrayJson);
+    arrays[array.name] = array;
+  });
+  return new State(arrays);
+};
+
+State.prototype.getProperty = function (property) {
+  return this.arrays[property.cArrayName].getProperty(property);
+};
+
+
+State.prototype.forEachProperty = function (callback) {
+  var self = this;
+  Object.keys(self.arrays).forEach(function (name) {
+    self.arrays[name].forEachProperty(callback);
+  });
+};
+
+State.prototype.forEachArray = function (callback) {
+  var self = this;
+  return Object.keys(this.arrays).forEach(function (name) {
+    callback(self.arrays[name]);
+  });
+};
+
+State.prototype.join = function (rev) {
+  var self = this;
+  rev.forEachProperty(function (property) {
+    property.forEachIndex(function (index) {
+      var joiner = property.get(index);
+      var joinee = self.getProperty(property).get(index);
+      joinee.join(joiner);
+    });
+  });
+};
+
+State.prototype.joinIn = function (rev) {
+  var self = this;
+  self.forEachProperty(function (property) {
+    property.forEachIndex(function (index) {
+      var joiner = rev.getProperty(property).get(index);
+      var joinee = property.get(index);
+      joiner.joinIn(joinee);
+    });
+  });
+};
+
+State.prototype.fork = function () {
+  var forked = new State();
+  var forker = this;
+  forker.forEachArray(function (cArray) {
+    var fArray = cArray.fork();
+    forked.arrays[fArray.name] = fArray;
+  });
+  return forked;
+};
+
+State.prototype.replaceBy = function (state) {
+  var self = this;
+  state.forEachProperty(function (property) {
+      property.forEachIndex(function (index) {
+      var type1 = property.get(index);
+      var type2 = state.getProperty(property).get(index);
+      type1.replaceBy(type2);
+    });
+  });
+};
+
+},{"./CArray":6,"./CloudType":7}],12:[function(require,module,exports){
+
+
+//
+// The shims in this file are not fully implemented shims for the ES5
+// features, but do work for the particular usecases there is in
+// the other modules.
+//
+
+var toString = Object.prototype.toString;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+// Array.isArray is supported in IE9
+function isArray(xs) {
+  return toString.call(xs) === '[object Array]';
+}
+exports.isArray = typeof Array.isArray === 'function' ? Array.isArray : isArray;
+
+// Array.prototype.indexOf is supported in IE9
+exports.indexOf = function indexOf(xs, x) {
+  if (xs.indexOf) return xs.indexOf(x);
+  for (var i = 0; i < xs.length; i++) {
+    if (x === xs[i]) return i;
+  }
+  return -1;
+};
+
+// Array.prototype.filter is supported in IE9
+exports.filter = function filter(xs, fn) {
+  if (xs.filter) return xs.filter(fn);
+  var res = [];
+  for (var i = 0; i < xs.length; i++) {
+    if (fn(xs[i], i, xs)) res.push(xs[i]);
+  }
+  return res;
+};
+
+// Array.prototype.forEach is supported in IE9
+exports.forEach = function forEach(xs, fn, self) {
+  if (xs.forEach) return xs.forEach(fn, self);
+  for (var i = 0; i < xs.length; i++) {
+    fn.call(self, xs[i], i, xs);
+  }
+};
+
+// Array.prototype.map is supported in IE9
+exports.map = function map(xs, fn) {
+  if (xs.map) return xs.map(fn);
+  var out = new Array(xs.length);
+  for (var i = 0; i < xs.length; i++) {
+    out[i] = fn(xs[i], i, xs);
+  }
+  return out;
+};
+
+// Array.prototype.reduce is supported in IE9
+exports.reduce = function reduce(array, callback, opt_initialValue) {
+  if (array.reduce) return array.reduce(callback, opt_initialValue);
+  var value, isValueSet = false;
+
+  if (2 < arguments.length) {
+    value = opt_initialValue;
+    isValueSet = true;
+  }
+  for (var i = 0, l = array.length; l > i; ++i) {
+    if (array.hasOwnProperty(i)) {
+      if (isValueSet) {
+        value = callback(value, array[i], i, array);
+      }
+      else {
+        value = array[i];
+        isValueSet = true;
+      }
+    }
+  }
+
+  return value;
+};
+
+// String.prototype.substr - negative index don't work in IE8
+if ('ab'.substr(-1) !== 'b') {
+  exports.substr = function (str, start, length) {
+    // did we get a negative start, calculate how much it is from the beginning of the string
+    if (start < 0) start = str.length + start;
+
+    // call the original function
+    return str.substr(start, length);
+  };
+} else {
+  exports.substr = function (str, start, length) {
+    return str.substr(start, length);
+  };
+}
+
+// String.prototype.trim is supported in IE9
+exports.trim = function (str) {
+  if (str.trim) return str.trim();
+  return str.replace(/^\s+|\s+$/g, '');
+};
+
+// Function.prototype.bind is supported in IE9
+exports.bind = function () {
+  var args = Array.prototype.slice.call(arguments);
+  var fn = args.shift();
+  if (fn.bind) return fn.bind.apply(fn, args);
+  var self = args.shift();
+  return function () {
+    fn.apply(self, args.concat([Array.prototype.slice.call(arguments)]));
+  };
+};
+
+// Object.create is supported in IE9
+function create(prototype, properties) {
+  var object;
+  if (prototype === null) {
+    object = { '__proto__' : null };
+  }
+  else {
+    if (typeof prototype !== 'object') {
+      throw new TypeError(
+        'typeof prototype[' + (typeof prototype) + '] != \'object\''
+      );
+    }
+    var Type = function () {};
+    Type.prototype = prototype;
+    object = new Type();
+    object.__proto__ = prototype;
+  }
+  if (typeof properties !== 'undefined' && Object.defineProperties) {
+    Object.defineProperties(object, properties);
+  }
+  return object;
+}
+exports.create = typeof Object.create === 'function' ? Object.create : create;
+
+// Object.keys and Object.getOwnPropertyNames is supported in IE9 however
+// they do show a description and number property on Error objects
+function notObject(object) {
+  return ((typeof object != "object" && typeof object != "function") || object === null);
+}
+
+function keysShim(object) {
+  if (notObject(object)) {
+    throw new TypeError("Object.keys called on a non-object");
+  }
+
+  var result = [];
+  for (var name in object) {
+    if (hasOwnProperty.call(object, name)) {
+      result.push(name);
+    }
+  }
+  return result;
+}
+
+// getOwnPropertyNames is almost the same as Object.keys one key feature
+//  is that it returns hidden properties, since that can't be implemented,
+//  this feature gets reduced so it just shows the length property on arrays
+function propertyShim(object) {
+  if (notObject(object)) {
+    throw new TypeError("Object.getOwnPropertyNames called on a non-object");
+  }
+
+  var result = keysShim(object);
+  if (exports.isArray(object) && exports.indexOf(object, 'length') === -1) {
+    result.push('length');
+  }
+  return result;
+}
+
+var keys = typeof Object.keys === 'function' ? Object.keys : keysShim;
+var getOwnPropertyNames = typeof Object.getOwnPropertyNames === 'function' ?
+  Object.getOwnPropertyNames : propertyShim;
+
+if (new Error().hasOwnProperty('description')) {
+  var ERROR_PROPERTY_FILTER = function (obj, array) {
+    if (toString.call(obj) === '[object Error]') {
+      array = exports.filter(array, function (name) {
+        return name !== 'description' && name !== 'number' && name !== 'message';
+      });
+    }
+    return array;
+  };
+
+  exports.keys = function (object) {
+    return ERROR_PROPERTY_FILTER(object, keys(object));
+  };
+  exports.getOwnPropertyNames = function (object) {
+    return ERROR_PROPERTY_FILTER(object, getOwnPropertyNames(object));
+  };
+} else {
+  exports.keys = keys;
+  exports.getOwnPropertyNames = getOwnPropertyNames;
+}
+
+// Object.getOwnPropertyDescriptor - supported in IE8 but only on dom elements
+function valueObject(value, key) {
+  return { value: value[key] };
+}
+
+if (typeof Object.getOwnPropertyDescriptor === 'function') {
+  try {
+    Object.getOwnPropertyDescriptor({'a': 1}, 'a');
+    exports.getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+  } catch (e) {
+    // IE8 dom element issue - use a try catch and default to valueObject
+    exports.getOwnPropertyDescriptor = function (value, key) {
+      try {
+        return Object.getOwnPropertyDescriptor(value, key);
+      } catch (e) {
+        return valueObject(value, key);
+      }
+    };
+  }
+} else {
+  exports.getOwnPropertyDescriptor = valueObject;
+}
+
+},{}],13:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+var shims = require('_shims');
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (!isString(f)) {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j':
+        try {
+          return JSON.stringify(args[i++]);
+        } catch (_) {
+          return '[Circular]';
+        }
+      default:
+        return x;
+    }
+  });
+  for (var x = args[i]; i < len; x = args[++i]) {
+    if (isNull(x) || !isObject(x)) {
+      str += ' ' + x;
+    } else {
+      str += ' ' + inspect(x);
+    }
+  }
+  return str;
+};
+
+/**
+ * Echos the value of a value. Trys to print the value out
+ * in the best way possible given the different types.
+ *
+ * @param {Object} obj The object to print out.
+ * @param {Object} opts Optional options object that alters the output.
+ */
+/* legacy: obj, showHidden, depth, colors*/
+function inspect(obj, opts) {
+  // default options
+  var ctx = {
+    seen: [],
+    stylize: stylizeNoColor
+  };
+  // legacy...
+  if (arguments.length >= 3) ctx.depth = arguments[2];
+  if (arguments.length >= 4) ctx.colors = arguments[3];
+  if (isBoolean(opts)) {
+    // legacy...
+    ctx.showHidden = opts;
+  } else if (opts) {
+    // got an "options" object
+    exports._extend(ctx, opts);
+  }
+  // set default options
+  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+  if (isUndefined(ctx.depth)) ctx.depth = 2;
+  if (isUndefined(ctx.colors)) ctx.colors = false;
+  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+  if (ctx.colors) ctx.stylize = stylizeWithColor;
+  return formatValue(ctx, obj, ctx.depth);
+}
+exports.inspect = inspect;
+
+
+// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+inspect.colors = {
+  'bold' : [1, 22],
+  'italic' : [3, 23],
+  'underline' : [4, 24],
+  'inverse' : [7, 27],
+  'white' : [37, 39],
+  'grey' : [90, 39],
+  'black' : [30, 39],
+  'blue' : [34, 39],
+  'cyan' : [36, 39],
+  'green' : [32, 39],
+  'magenta' : [35, 39],
+  'red' : [31, 39],
+  'yellow' : [33, 39]
+};
+
+// Don't use 'blue' not visible on cmd.exe
+inspect.styles = {
+  'special': 'cyan',
+  'number': 'yellow',
+  'boolean': 'yellow',
+  'undefined': 'grey',
+  'null': 'bold',
+  'string': 'green',
+  'date': 'magenta',
+  // "name": intentionally not styling
+  'regexp': 'red'
+};
+
+
+function stylizeWithColor(str, styleType) {
+  var style = inspect.styles[styleType];
+
+  if (style) {
+    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+           '\u001b[' + inspect.colors[style][1] + 'm';
+  } else {
+    return str;
+  }
+}
+
+
+function stylizeNoColor(str, styleType) {
+  return str;
+}
+
+
+function arrayToHash(array) {
+  var hash = {};
+
+  shims.forEach(array, function(val, idx) {
+    hash[val] = true;
+  });
+
+  return hash;
+}
+
+
+function formatValue(ctx, value, recurseTimes) {
+  // Provide a hook for user-specified inspect functions.
+  // Check that value is an object with an inspect function on it
+  if (ctx.customInspect &&
+      value &&
+      isFunction(value.inspect) &&
+      // Filter out the util module, it's inspect function is special
+      value.inspect !== exports.inspect &&
+      // Also filter out any prototype objects using the circular check.
+      !(value.constructor && value.constructor.prototype === value)) {
+    var ret = value.inspect(recurseTimes);
+    if (!isString(ret)) {
+      ret = formatValue(ctx, ret, recurseTimes);
+    }
+    return ret;
+  }
+
+  // Primitive types cannot have properties
+  var primitive = formatPrimitive(ctx, value);
+  if (primitive) {
+    return primitive;
+  }
+
+  // Look up the keys of the object.
+  var keys = shims.keys(value);
+  var visibleKeys = arrayToHash(keys);
+
+  if (ctx.showHidden) {
+    keys = shims.getOwnPropertyNames(value);
+  }
+
+  // Some type of object without properties can be shortcutted.
+  if (keys.length === 0) {
+    if (isFunction(value)) {
+      var name = value.name ? ': ' + value.name : '';
+      return ctx.stylize('[Function' + name + ']', 'special');
+    }
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    }
+    if (isDate(value)) {
+      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+    }
+    if (isError(value)) {
+      return formatError(value);
+    }
+  }
+
+  var base = '', array = false, braces = ['{', '}'];
+
+  // Make Array say that they are Array
+  if (isArray(value)) {
+    array = true;
+    braces = ['[', ']'];
+  }
+
+  // Make functions say that they are functions
+  if (isFunction(value)) {
+    var n = value.name ? ': ' + value.name : '';
+    base = ' [Function' + n + ']';
+  }
+
+  // Make RegExps say that they are RegExps
+  if (isRegExp(value)) {
+    base = ' ' + RegExp.prototype.toString.call(value);
+  }
+
+  // Make dates with properties first say the date
+  if (isDate(value)) {
+    base = ' ' + Date.prototype.toUTCString.call(value);
+  }
+
+  // Make error with message first say the error
+  if (isError(value)) {
+    base = ' ' + formatError(value);
+  }
+
+  if (keys.length === 0 && (!array || value.length == 0)) {
+    return braces[0] + base + braces[1];
+  }
+
+  if (recurseTimes < 0) {
+    if (isRegExp(value)) {
+      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+    } else {
+      return ctx.stylize('[Object]', 'special');
+    }
+  }
+
+  ctx.seen.push(value);
+
+  var output;
+  if (array) {
+    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+  } else {
+    output = keys.map(function(key) {
+      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+    });
+  }
+
+  ctx.seen.pop();
+
+  return reduceToSingleString(output, base, braces);
+}
+
+
+function formatPrimitive(ctx, value) {
+  if (isUndefined(value))
+    return ctx.stylize('undefined', 'undefined');
+  if (isString(value)) {
+    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                             .replace(/'/g, "\\'")
+                                             .replace(/\\"/g, '"') + '\'';
+    return ctx.stylize(simple, 'string');
+  }
+  if (isNumber(value))
+    return ctx.stylize('' + value, 'number');
+  if (isBoolean(value))
+    return ctx.stylize('' + value, 'boolean');
+  // For some reason typeof null is "object", so special case here.
+  if (isNull(value))
+    return ctx.stylize('null', 'null');
+}
+
+
+function formatError(value) {
+  return '[' + Error.prototype.toString.call(value) + ']';
+}
+
+
+function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+  var output = [];
+  for (var i = 0, l = value.length; i < l; ++i) {
+    if (hasOwnProperty(value, String(i))) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          String(i), true));
+    } else {
+      output.push('');
+    }
+  }
+
+  shims.forEach(keys, function(key) {
+    if (!key.match(/^\d+$/)) {
+      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+          key, true));
+    }
+  });
+  return output;
+}
+
+
+function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+  var name, str, desc;
+  desc = shims.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+  if (desc.get) {
+    if (desc.set) {
+      str = ctx.stylize('[Getter/Setter]', 'special');
+    } else {
+      str = ctx.stylize('[Getter]', 'special');
+    }
+  } else {
+    if (desc.set) {
+      str = ctx.stylize('[Setter]', 'special');
+    }
+  }
+
+  if (!hasOwnProperty(visibleKeys, key)) {
+    name = '[' + key + ']';
+  }
+  if (!str) {
+    if (shims.indexOf(ctx.seen, desc.value) < 0) {
+      if (isNull(recurseTimes)) {
+        str = formatValue(ctx, desc.value, null);
+      } else {
+        str = formatValue(ctx, desc.value, recurseTimes - 1);
+      }
+      if (str.indexOf('\n') > -1) {
+        if (array) {
+          str = str.split('\n').map(function(line) {
+            return '  ' + line;
+          }).join('\n').substr(2);
+        } else {
+          str = '\n' + str.split('\n').map(function(line) {
+            return '   ' + line;
+          }).join('\n');
+        }
+      }
+    } else {
+      str = ctx.stylize('[Circular]', 'special');
+    }
+  }
+  if (isUndefined(name)) {
+    if (array && key.match(/^\d+$/)) {
+      return str;
+    }
+    name = JSON.stringify('' + key);
+    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+      name = name.substr(1, name.length - 2);
+      name = ctx.stylize(name, 'name');
+    } else {
+      name = name.replace(/'/g, "\\'")
+                 .replace(/\\"/g, '"')
+                 .replace(/(^"|"$)/g, "'");
+      name = ctx.stylize(name, 'string');
+    }
+  }
+
+  return name + ': ' + str;
+}
+
+
+function reduceToSingleString(output, base, braces) {
+  var numLinesEst = 0;
+  var length = shims.reduce(output, function(prev, cur) {
+    numLinesEst++;
+    if (cur.indexOf('\n') >= 0) numLinesEst++;
+    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+  }, 0);
+
+  if (length > 60) {
+    return braces[0] +
+           (base === '' ? '' : base + '\n ') +
+           ' ' +
+           output.join(',\n  ') +
+           ' ' +
+           braces[1];
+  }
+
+  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+}
+
+
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+function isArray(ar) {
+  return shims.isArray(ar);
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return typeof arg === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return isObject(re) && objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return isObject(d) && objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return isObject(e) && objectToString(e) === '[object Error]';
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null ||
+         typeof arg === 'boolean' ||
+         typeof arg === 'number' ||
+         typeof arg === 'string' ||
+         typeof arg === 'symbol' ||  // ES6 symbol
+         typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.binarySlice === 'function'
+  ;
+}
+exports.isBuffer = isBuffer;
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+
+// log is just a thin wrapper to console.log that prepends a timestamp
+exports.log = function() {
+  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+};
+
+
+/**
+ * Inherit the prototype methods from one constructor into another.
+ *
+ * The Function.prototype.inherits from lang.js rewritten as a standalone
+ * function (not on Function.prototype). NOTE: If this file is to be loaded
+ * during bootstrapping this function needs to be rewritten using some native
+ * functions as prototype setup using normal JavaScript does not work as
+ * expected during bootstrapping (see mirror.js in r114903).
+ *
+ * @param {function} ctor Constructor function which needs to inherit the
+ *     prototype.
+ * @param {function} superCtor Constructor function to inherit prototype from.
+ */
+exports.inherits = function(ctor, superCtor) {
+  ctor.super_ = superCtor;
+  ctor.prototype = shims.create(superCtor.prototype, {
+    constructor: {
+      value: ctor,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+};
+
+exports._extend = function(origin, add) {
+  // Don't do anything if add isn't an object
+  if (!add || !isObject(add)) return origin;
+
+  var keys = shims.keys(add);
+  var i = keys.length;
+  while (i--) {
+    origin[keys[i]] = add[keys[i]];
+  }
+  return origin;
+};
+
+function hasOwnProperty(obj, prop) {
+  return Object.prototype.hasOwnProperty.call(obj, prop);
+}
+
+},{"_shims":12}]},{},[4])
 ;

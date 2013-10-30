@@ -62,7 +62,9 @@ CInt.prototype._join = function (cint, target) {
 };
 
 CInt.prototype.fork = function () {
-  return new CInt(this.base + this.offset, 0, false);
+  var cint = new CInt(this.base + this.offset, 0, false);
+  this.applyFork();
+  return cint;
 };
 
 CInt.prototype.applyFork = function () {
@@ -76,4 +78,8 @@ CInt.prototype.replaceBy = function (cint) {
   this.base   = cint.base;
   this.offset = cint.offset;
   this.isSet  = cint.isSet;
+};
+
+CInt.prototype.isDefault = function () {
+  return (this.get() === 0);
 };

@@ -5,15 +5,16 @@
   "version": "0.0.1",
   "engine": "node >= 0.4.1",
   "dependencies": {
-    "socket.io": "0.9.x"
+    "socket.io": "*",
+    "socket.io-client": "*"
   },
   "devDependencies": {
-    "should": "1.2.x",
-    "mocha": "1.9.x",
-    "zombie": "1.4.x"
+    "should": "*",
+    "mocha": "*"
   },
   "optionalDependencies": {},
   "scripts": {
-    "test": "node_modules/.bin/mocha"
+    "test": "node_modules/.bin/mocha",
+    "make-test": "node_modules/.bin/browserify"
   }
 }

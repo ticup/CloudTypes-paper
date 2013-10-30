@@ -5,11 +5,15 @@ function CloudType() {}
 CloudType.types = {};
 
 CloudType.register = function (type) {
-  this.types[type.prototype.tag] = type;
+  CloudType.types[type.prototype.tag] = type;
+};
+
+CloudType.fromTag = function (tag) {
+  return CloudType.types[tag];
 };
 
 CloudType.fromJSON = function (json) {
-  return this.types[json.type].fromJSON(json.info);
+  return CloudType.types[json.type].fromJSON(json.info);
 };
 
 CloudType.prototype.toJSON = function () {

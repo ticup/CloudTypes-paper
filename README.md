@@ -94,7 +94,7 @@ Load the CloudTypes client bundle into your html and start using the distributed
       </script>
     </html>
 
-note: you will also need an http server to serve your file, check out the counter example for a quick complete bootstrap. The examples should be run from the CloudTypes directory:
+note: you will probably also need an http server to serve your file, check out the counter example for a quick complete bootstrap. The examples should be run from the CloudTypes directory:
 
     node examples/server/counter
 

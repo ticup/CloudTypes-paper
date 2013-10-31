@@ -46,10 +46,32 @@ CEntity.prototype.forEachState = function (callback) {
 CEntity.prototype.setMax = function (entity1, entity2, index) {
   var val1 = entity1.states[index];
   var val2 = entity2.states[index];
-  if (val1 === DELETED || val2 === DELETED)
+  if (val1 === DELETED || val2 === DELETED) {
     return this.states[index] = DELETED;
-  if (val1 === OK || val2 === OK)
+  }
+  if (val1 === OK || val2 === OK) {
     return this.states[index] = OK;
+  }
+
+};
+
+CEntity.prototype.where = function (filter) {
+  var self = this;
+  var sumFilter = filter;
+  return {
+    all: function () {
+      var entities = [];
+      Object.keys(self.states).forEach(function (index) {
+        if (self.states[index] === OK && sumFilter(self.get(index)))
+          entities.push(self.get(index));
+      });
+      return entities;
+    },
+    where: function (newFilter) {
+      sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
+      return this;
+    }
+  }
 };
 
 CEntity.prototype.all = function () {

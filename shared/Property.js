@@ -33,7 +33,10 @@ Property.prototype.entries = function () {
   var self = this;
   var result = [];
   this.forEachIndex(function (index) {
-    if (!self.cArray.state.deleted(index) && !self.cArray.state.isDefault(self.get(index))) {
+//    console.log("____entry checking : " + index + "____");
+//    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
+//    console.log("default: " + self.cArray.state.isDefault(self.get(index)));
+    if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.get(index))) {
       result.push(index);
     }
   });

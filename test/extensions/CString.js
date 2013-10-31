@@ -51,7 +51,7 @@ CString.prototype.isJoinOf = function (type1, type2) {
   }
 };
 
-CString.prototype.isConsistent = function (cint) {
-  console.log(this.get() + " =? " + cint.get());
-  this.get().should.equal(cint.get());
+CString.prototype.isConsistent = function (cstring) {
+//  console.log(this.get() + " =? " + cint.get());
+  this.get().should.equal(cstring.get());
 };

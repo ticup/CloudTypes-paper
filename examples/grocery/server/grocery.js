@@ -1,5 +1,6 @@
-var CloudTypes = require('../../../server/main.js');
 
+// HTTP serving code
+/////////////////////
 var http  = require('http');
 var static = require('node-static');
 
@@ -13,8 +14,12 @@ var app = http.createServer(function (req, res) {
 });
 app.listen(8090);
 
-// Cloud Types
-var cloudTypes = CloudTypes.createServer();
+
+
+
+// Actual CloudTypes Code
+//////////////////////////
+var CloudTypes = require('../../../server/main.js').createServer();
 cloudTypes.declare('totalItems',
                    new CloudTypes.CInt());
 cloudTypes.declare('Grocery',

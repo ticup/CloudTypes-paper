@@ -78,6 +78,14 @@ describe('State', function () {
     });
   });
 
+  describe('.declare(CloudType)', function (){
+    var state = new State();
+    state.declare(new CInt());
+    it('should create a proxy CArray (global)', function () {
+
+    });
+  });
+
   describe('.getProperty(propertyName)', function () {
     var state1 = State.fromJSON(stubs.stateUnchanged);
     var state2 = State.fromJSON(stubs.stateUnchanged);
@@ -110,9 +118,10 @@ describe('State', function () {
     var state1 = State.fromJSON(stubs.stateUnchanged);
     var state2 = State.fromJSON(stubs.stateChanged);
     var jState = State.fromJSON(stubs.stateUnchanged);
-    console.log("JOIN");
-    console.log(state1.arrays.Customer.properties.properties.name.cArray);
+    state1.print();
+    state2.print();
     jState.join(state2);
+    jState.print();
     it('should join the given state into its own state (results in own state)', function () {
       jState.isJoinOf(state1, state2);
     });

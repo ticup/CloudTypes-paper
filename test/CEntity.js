@@ -150,7 +150,7 @@ describe('CEntity state independent operations', function () {
       var entity1 = CEntity.fromJSON(stubs.customerUnchanged);
       var entity2 = CEntity.fromJSON(stubs.customerChanged);
       entity1.all().length.should.equal(1);
-      entity2.all().length.should.equal(3);
+      entity2.all().length.should.equal(4);
     });
   });
 
@@ -165,7 +165,7 @@ describe('CEntity state independent operations', function () {
       entity2.forEachState(function (idx) {
         ctr++
       });
-      ctr.should.equal(4);
+      ctr.should.equal(5);
     });
   });
 
@@ -238,22 +238,57 @@ describe('CEntity state independent operations', function () {
 });
 
 describe('CEntity state dependent operations', function () {
-  var entity, state;
+  var entity, state, Customer;
+  state  = State.fromJSON(stubs.stateChanged);
+  Order = state.get('Order');
 
-  beforeEach(function () {
-    var name = "Consumer";
-    var indexNames = [{name: "String"}];
-    var properties = {address: "CString"};
-    entity = CEntity.declare(name, indexNames, properties);
-    state  = new State();
-    state.declare(entity);
-  });
+//  beforeEach(function () {
+//    var name = "Consumer";
+//    var indexNames = [{name: "String"}];
+//    var properties = {address: "CString"};
+//    entity = CEntity.declare(name, indexNames, properties);
+//    state1  = State.fromJSON(stubs.stateUnchanged);
+
+//    state.declare(entity);
+//  });
 
   describe('CEntity initialized in state', function () {
     it('should have a property state', function () {
-      entity.should.have.property('state');
-      entity.state.should.equal(state);
+      should.exist(state);
+      should.exist(Order);
+      Order.should.have.property('state');
+      Order.state.should.equal(state);
     })
+  });
+
+  describe('.where(callback)', function () {
+    var where = Order.where(function (entry) { return true; });
+
+    it('should return an object with methods where and all', function () {
+      should.exist(where);
+      where.should.have.property('where');
+      where.should.have.property('all');
+      where.where.should.be.a.Function;
+      where.all.should.be.a.Function;
+    });
+
+    describe('.all()', function () {
+      it('should return all entities that cohere to the previously added filter', function () {
+        var all = where.all();
+        should.exist(all);
+        all.length.should.equal(3);
+      });
+    });
+
+//    describe('.where(callback)', function () {
+//      it('should be chaining all the filters', function () {
+//        var all = Customer.where(function (entry) {
+//          entry.get('quantity').where(function (entry) { return entry.get('name').get() === 'foo'; }).all();
+//        }
+//        should.exist(all);
+//        all.length.should.equal(1)
+//      });
+//    });
   });
 
 

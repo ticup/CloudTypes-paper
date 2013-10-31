@@ -188,20 +188,10 @@ State.prototype.replaceBy = function (state) {
     });
   });
   state.forEachEntity(function (entity) {
-    entity.states = state.get(entity.name).states;
+    self.get(entity.name).states = entity.states;
   });
 };
 
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
-//  console.log("PROPERTIES:");
-//  this.forEachProperty(function (property) {
-//    console.log(property.name + ": " + property.ctypeName);
-//  });
-//  this.forEachProperty(function (property) {
-//    console.log
-//    property.forEachIndex(function (index) {
-//      console.log(property.name + "." + index + ": " + require('util').inspect(property.get(index)));
-//    });
-//  })
 };

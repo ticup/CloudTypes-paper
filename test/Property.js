@@ -146,29 +146,56 @@ describe('Property state independent operations', function () {
 describe('Property state dependent operations', function () {
   var state1 = State.fromJSON(stubs.stateUnchanged);
   var state2 = State.fromJSON(stubs.stateChanged);
-  var property1 = state1.get('Customer').getProperty('name');
-  var property2 = state2.get('Customer').getProperty('name');
-
-  var property3 = state2.get('Order').getProperty('quantity');
-  var property4 = state2.get('Order').getProperty('quantity');
-
-  describe('state/property initialisation', function () {
-    should.exist(property1);
-    should.exist(property2);
-  });
 
   describe('.entries()', function () {
-    var entries1 = property1.entries();
-    var entries2 = property2.entries();
-    var entries3 = property2.entries();
-    var entries4 = property2.entries();
+    var orderQuantity1 = state1.get('Order').getProperty('quantity').entries();
+    var orderQuantity2 = state2.get('Order').getProperty('quantity').entries();
+    var orderProduct1 = state1.get('Order').getProperty('product').entries();
+    var orderProduct2 = state2.get('Order').getProperty('product').entries();
+
+    var customerName1 = state1.get('Customer').getProperty('name').entries();
+    var customerName2 = state2.get('Customer').getProperty('name').entries();
     it('should should return all entries that are not deleted or default', function () {
-      should.exist(entries1);
-      should.exist(entries2);
-      should.exist(entries3);
-      should.exist(entries4);
-      entries1.length.should.equal(0);
-      entries2.length.should.equal(2);
+      should.exist(orderQuantity1);
+      should.exist(orderQuantity2);
+      should.exist(orderProduct1);
+      should.exist(orderProduct2);
+      should.exist(customerName2);
+      should.exist(customerName2);
+
+      /* Unchanged State */
+      // 1 order: - Customer:0#0.quantity (not default) => 1
+      orderQuantity1.length.should.equal(1);
+      // 1 order: + Customer:0#0.product (default) => 0
+      orderProduct1.length.should.equal(0);
+
+      // 1 customer: - Customer:0#0.name (default) => 0
+      customerName1.length.should.equal(0);
+
+      /* Changed State */
+      // 7 orders:
+      // - Order:0#2.Customer:0#1 (deleted)
+      // - Order:0#4.Customer:0#1 (deleted)
+      // - Order:0#0.Customer:0#0 (Customer:0#0 deleted)
+      // - Order:0#1.Customer:0#0 (Customer:0#0 deleted)
+      // => 1
+      orderQuantity2.length.should.equal(3);
+
+      // 7 orders:
+      // - Order:0#2.Customer:0#1 (deleted)
+      // - Order:0#4.Customer:0#1 (deleted)
+      // - Order:0#0.Customer:0#0 (Customer:0#0 deleted)
+      // - Order:0#1.Customer:0#0 (Customer:0#0 deleted)
+      // - Order:0#3.Customer:0#1.product (default)
+      orderProduct2.length.should.equal(2);
+
+      // 5 customers:
+      // - Customer:0#0 (deleted)
+      // - Customer:0#1.name (default)
+      // - Customer:0#4.name (default)
+      // => 2
+      customerName2.length.should.equal(2)
+
     });
   });
 });

@@ -98,13 +98,14 @@ State.prototype.isEqual = function (state) {
 
 State.prototype.isConsistent = function (state) {
   this.forPairs(state, function (type1, type2) {
+    console.log(require('util').inspect(type1.get()) + " consistent? " + require('util').inspect(type2.get()));
     type1.isConsistent(type2);
   });
   this.forEachEntity(function (entity) {
-      console.log(require('util').inspect(entity.states) + " consistent? " + require('util').inspect(state.get(entity.name).states));
+//      console.log(require('util').inspect(entity.states) + " consistent? " + require('util').inspect(state.get(entity.name).states));
     entity.forEachState(function (index) {
-      console.log('index: ' + index);
-      console.log(entity.states[index] + " ?= " + state.get(entity.name).states[index]);
+//      console.log('index: ' + index);
+//      console.log(entity.states[index] + " ?= " + state.get(entity.name).states[index]);
       entity.states[index].should.equal(state.get(entity.name).states[index]);
     });
   });

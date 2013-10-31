@@ -7,11 +7,23 @@ var cint1 = new CInt(10);
 var cint2 = new CInt(20);
 var cint3 = new CInt(30);
 
+var ucint1 = new CInt();
+var ucint2 = new CInt();
+var ucint3 = new CInt();
+
+
+
+
+var cintc = new CInt();
+cintc.set(20);
+
 // CString
 var cstring  = new CString();
 var cstring1 = new CString();
 var cstring2 = new CString();
 var cstring3 = new CString();
+
+
 
 // unchanged state
 exports.unchanged = createMap();
@@ -99,14 +111,14 @@ exports.orderUnchanged = {
       name: 'product',
       type: 'CString',
       values: {
-        'Order:0#0.Customer:0#0': cstring.toJSON()
+        'Order:0#0.Customer:0#0': cstring.toJSON(),
       }
     },
     {
       name: 'quantity',
       type: 'CInt',
       values: {
-        'Order:0#0.Customer:0#0': cint.toJSON()
+        'Order:0#0.Customer:0#0': cint2.toJSON()
       }
     }
   ],
@@ -121,6 +133,9 @@ cint1.set(1);
 cint2.add(2);
 cint3.set(3);
 cint3.add(3);
+ucint1.set(10);
+ucint2.set(20);
+ucint3.set(30);
 
 // CString
 cstring1.set('foo');
@@ -246,8 +261,9 @@ exports.customerChanged = {
       type: 'CString',
       values: {
         'Customer:0#0': cstring.toJSON(),
-        'Customer:0#1': cstring2.toJSON(),
-        'Customer:0#2': cstring3.toJSON()
+        'Customer:0#1': cstring.toJSON(),
+        'Customer:0#2': cstring2.toJSON(),
+        'Customer:0#3': cstring3.toJSON()
       }
     }
   ],
@@ -255,7 +271,8 @@ exports.customerChanged = {
     'Customer:0#0': 'deleted',
     'Customer:0#1': 'ok',
     'Customer:0#2': 'ok',
-    'Customer:0#3': 'ok'
+    'Customer:0#3': 'ok',
+    'Customer:0#4': 'ok'
   }
 };
 
@@ -274,27 +291,33 @@ exports.orderChanged = {
         'Order:0#0.Customer:0#0': cstring.toJSON(),
         'Order:0#1.Customer:0#0': cstring1.toJSON(),
         'Order:0#2.Customer:0#1': cstring2.toJSON(),
-        'Order:0#3.Customer:0#1': cstring3.toJSON(),
-        'Order:0#4.Customer:0#1': cstring3.toJSON()
+        'Order:0#3.Customer:0#1': cstring.toJSON(),
+        'Order:0#4.Customer:0#1': cstring3.toJSON(),
+        'Order:0#5.Customer:0#2': cstring3.toJSON(),
+        'Order:0#6.Customer:0#2': cstring3.toJSON()
       }
     },
     {
       name: 'quantity',
       type: 'CInt',
       values: {
-        'Order:0#0.Customer:0#0': cint.toJSON(),
-        'Order:0#2.Customer:0#1': cint2.toJSON(),
-        'Order:0#3.Customer:0#1': cint3.toJSON(),
-        'Order:0#4.Customer:0#1': cint3.toJSON()
+        'Order:0#0.Customer:0#0': cint2.toJSON(),
+        'Order:0#2.Customer:0#1': cint.toJSON(),
+        'Order:0#3.Customer:0#1': ucint3.toJSON(),
+        'Order:0#4.Customer:0#1': ucint3.toJSON(),
+        'Order:0#5.Customer:0#2': ucint2.toJSON(),
+        'Order:0#6.Customer:0#2': ucint1.toJSON()
       }
     }
   ],
   states: {
-    'Order:0#0': 'ok',
-    'Order:0#1': 'ok',
-    'Order:0#2': 'ok',
-    'Order:0#3': 'ok',
-    'Order:0#4': 'deleted'
+    'Order:0#0.Customer:0#0': 'deleted',
+    'Order:0#1.Customer:0#0': 'deleted',
+    'Order:0#2.Customer:0#1': 'deleted',
+    'Order:0#3.Customer:0#1': 'ok',
+    'Order:0#4.Customer:0#1': 'deleted',
+    'Order:0#5.Customer:0#2': 'ok',
+    'Order:0#6.Customer:0#2': 'ok'
   }
 };
 
@@ -313,7 +336,8 @@ exports.stateUnchanged = {
   arrays: [
     exports.groceryUnchanged,
     exports.productUnchanged,
-    exports.customerUnchanged
+    exports.customerUnchanged,
+    exports.orderUnchanged
   ]
 };
 
@@ -328,7 +352,8 @@ exports.stateChanged = {
   arrays: [
     exports.groceryChanged,
     exports.productChanged,
-    exports.customerChanged
+    exports.customerChanged,
+    exports.orderChanged
   ]
 }
 

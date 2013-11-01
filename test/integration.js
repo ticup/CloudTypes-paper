@@ -1,7 +1,6 @@
 // var jsdom      = require('jsdom');
 var should      = require('should');
 var fs          = require('fs');
-var Browser     = require('zombie');
 var http        = require('http');
 var util        = require('util');
 
@@ -15,7 +14,6 @@ var CInt        = require('./extensions/CInt');
 var CloudTypeServer = require('../server/main.js');
 var stubs = require('./stubs');
 
-var io_client  = require('socket.io-client');
 var CloudTypes = require('../client/main.js');
 var CloudTypesClient = require('../client/CloudTypesClient.js');
 

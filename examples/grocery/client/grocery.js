@@ -12,7 +12,7 @@ CloudTypes.createClient()
   var app = new Application(state);
 
   // start yielding
-  start(app, 2000);
+  start(app, 500);
 
   // install views into DOM + update with state
   app.install();

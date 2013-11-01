@@ -2,7 +2,7 @@
   "name": "cloudtypes",
   "description": "A JavaScript library implementation of the CloudTypes eventual consistency model",
   "author": "Tim Coppieters <coppieters.tim@gmail.com>",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -17,7 +17,9 @@
     "should": "*",
     "mocha": "*"
   },
-  "optionalDependencies": {},
+  "optionalDependencies": {
+    "node-static": "*"
+  },
   "scripts": {
     "test": "node_modules/.bin/mocha",
     "make-test": "node_modules/.bin/browserify"

@@ -7,7 +7,7 @@
 var State;
 
 CloudTypes.createClient()
-          .connect('http://localhost:8080', function (state) {
+          .connect(window.location.hostname, function (state) {
 
   var app = new Application(state);
 

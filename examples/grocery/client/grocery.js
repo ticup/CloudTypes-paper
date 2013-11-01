@@ -196,7 +196,8 @@ GroceryEntryView.prototype.showBought = function () {
 
   // on submit of bought form
   $('#boughtgrocerysubmit').click(function (event) {
-
+    event.preventDefault();
+    
     // scrape values
     var name = entryView.grocery.key('name');
     var toBuy = parseInt($('#boughtcount').val(), 10);

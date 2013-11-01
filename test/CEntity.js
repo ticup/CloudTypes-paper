@@ -219,7 +219,7 @@ describe('CEntity state independent operations', function () {
 
 });
 
-describe('CEntity state dependent operations', function () {
+describe('CEntity state dependent operations: ', function () {
   var entity, state, Customer;
   state  = State.fromJSON(stubs.stateChanged);
   Order = state.get('Order');
@@ -239,7 +239,7 @@ describe('CEntity state dependent operations', function () {
       should.exist(state);
       should.exist(Order);
       Order.should.have.property('state');
-      Order.state.should.equal(state);
+      Order.state.should.eql(state);
     })
   });
 

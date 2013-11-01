@@ -26,26 +26,35 @@
 
 <div id="wrap">
   <div class="container">
-
+    <div class="network-actions">
+      <button href="#" id='disconnect-btn' class="btn btn-default btn-sm pull-right">Disconnect</button>
+      <button href="#" id='connect-btn' class="btn btn-default btn-sm pull-right active">Connect</button>
+    </div>
+    <div class="clearfix"></div>
   <div class="text-center">
+
     <h1>CloudTypes Example: Grocery List</h1>
-    <p class="lead">Add new groceries using the form at the bottom <br> or mark the amount you bought of an item by clicking it in the list.</p>
+    <p class="lead">Add new groceries using the form at the bottom <br> and mark the amount you bought of an item by clicking it in the list. Easily play with connectivity using connect/disconnect.</p>
 
-    <div class="grocerylist center-block"></div>
-    <form id="newgroceryform" role="form" class="form-inline">
-      <div class="form-group">
-        <label class="sr-only" for="newgroceryname">Grocery name</label>
-        <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
-      </div>
-      <div class="form-group">
-        <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
-        <input type="text" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
-      </div>
-      <div class="form-group">
-        <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
-      </div>
+        <div class="grocerylist center-block"></div>
 
-    </form>
+        <form id="newgroceryform" role="form" class="form-inline">
+          <div class="form-group">
+            <label class="sr-only" for="newgroceryname">Grocery name</label>
+            <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
+            <input type="text" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
+          </div>
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
+          </div>
+        </form>
+
+
+
+
   </div>
 
 </div>

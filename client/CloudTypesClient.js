@@ -12,5 +12,13 @@ CClient.prototype.connect = function (host, options, callback) {
 };
 
 CClient.prototype.close = function () {
-  return this.client.close();
+  this.client.disconnect();
+};
+
+CClient.prototype.disconnect = function () {
+  this.client.disconnect();
+};
+
+CClient.prototype.reconnect = function () {
+  this.client.reconnect();
 };

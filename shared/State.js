@@ -163,9 +163,9 @@ State.prototype._join = function (rev, target) {
       var joinee = self.getProperty(property).get(index);
       var t = target.getProperty(property).get(index);
 
-      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
+//      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
       joinee._join(joiner, t);
-      console.log("joined: " + require('util').inspect(t));
+//      console.log("joined: " + require('util').inspect(t));
     });
   });
   master.forEachEntity(function (entity) {

@@ -7,24 +7,41 @@ global.io = io;
 module.exports = Client;
 
 function Client() {
+  this.initialized = false;
 }
 
 Client.prototype.connect = function (host, options, callback) {
   var self = this;
   if (typeof callback === 'undefined') {
     callback = options;
-    options  = null;
+    options  = {};
   }
+  options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
+  this.host = host;
+  this.options = options;
+  this.callback = callback;
+
   this.socket = io.connect(host, options);
   this.socket.on('init', function (json) {
+    var state = State.fromJSON(json.state);
 
-    self.state = State.fromJSON(json.state);
+    console.log("got initialized");
+    if (self.initialized) {
+      return self.state.reinit(json.cid, self, state);
+    }
+
+    self.initialized = true;
+    self.state = state;
     self.state.init(json.cid, self);
     callback(self.state);
   });
 };
 
-Client.prototype.close = function () {
+Client.prototype.reconnect = function () {
+  return this.connect(this.host, this.options, this.callback);
+};
+
+Client.prototype.disconnect = function () {
   return this.socket.disconnect();
 };
 

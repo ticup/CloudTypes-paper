@@ -11,6 +11,13 @@ State.prototype.init = function (cid, client) {
   this.client   = client;
 };
 
+State.prototype.reinit = function (cid, client, state) {
+  console.log('reiniting');
+  this.cid      = cid;
+  this.client   = client;
+  this.yieldPull(state);
+};
+
 State.prototype.createUID = function (uid) {
   var id = this.cid + "#" + uid;
   console.log("CREATING NEW ENTITY:" + id);

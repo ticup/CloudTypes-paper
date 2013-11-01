@@ -65,9 +65,9 @@ describe('Integration #', function () {
     });
 
     describe('CloudTypesClient', function () {
-      var client = CloudTypes.createClient();
 
       describe('.connect(host:port, callback)', function () {
+        var client = CloudTypes.createClient();
         it('should call callback with state when connected to server', function (done) {
           client.connect(host + ':' + port, function (state) {
             should.exist(state);
@@ -78,6 +78,7 @@ describe('Integration #', function () {
       });
 
       describe('.connect(host:port, options, callback)', function () {
+        var client = CloudTypes.createClient();
         it('should call callback when connected to server', function (done) {
           client.connect(host + ':' + port, clientOptions, function () {
             client.close();

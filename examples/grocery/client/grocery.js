@@ -4,10 +4,10 @@
 
 // CloudTypes Client Setup
 //////////////////////////
-var State;
+var State, connect, disconnect;
 
-CloudTypes.createClient()
-          .connect(window.location.hostname, function (state) {
+var client = CloudTypes.createClient();
+client.connect(window.location.hostname, function (state) {
   State = state; // debug
   var app = new Application(state);
 
@@ -19,6 +19,7 @@ CloudTypes.createClient()
   app.update();
 
 });
+
 
 // Application
 ///////////////
@@ -62,6 +63,18 @@ Application.prototype.install = function () {
     app.toBuy(name, toBuy);
     app.update();
     event.preventDefault();
+  });
+
+  // install disconnect/disconnect
+  $('#disconnect-btn').click(function () {
+    $('.network-actions button').removeClass('active');
+    $(this).addClass('active');
+    client.disconnect();
+  });
+  $('#connect-btn').click(function () {
+    $('.network-actions button').removeClass('active');
+    $(this).addClass('active');
+    client.reconnect();
   });
 };
 

@@ -18,8 +18,8 @@ body {
 
 
 .grocerylist { margin-top: 50px }
-
 #footer { height: 60px }
+.network-actions {margin-top: 5px;}
 
 .container {
     width: auto;
@@ -28,4 +28,23 @@ body {
 }
 .container .credit {
     margin: 20px 0;
+}
+
+
+/* Custom page CSS
+-------------------------------------------------- */
+/* Not required for template or sticky footer method. */
+
+
+.container .credit {
+    margin: 20px 0;
+}
+
+#footer > .container {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+code {
+    font-size: 80%;
 }

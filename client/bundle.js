@@ -8,24 +8,41 @@ global.io = io;
 module.exports = Client;
 
 function Client() {
+  this.initialized = false;
 }
 
 Client.prototype.connect = function (host, options, callback) {
   var self = this;
   if (typeof callback === 'undefined') {
     callback = options;
-    options  = null;
+    options  = {};
   }
+  options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
+  this.host = host;
+  this.options = options;
+  this.callback = callback;
+
   this.socket = io.connect(host, options);
   this.socket.on('init', function (json) {
+    var state = State.fromJSON(json.state);
 
-    self.state = State.fromJSON(json.state);
+    console.log("got initialized");
+    if (self.initialized) {
+      return self.state.reinit(json.cid, self, state);
+    }
+
+    self.initialized = true;
+    self.state = state;
     self.state.init(json.cid, self);
     callback(self.state);
   });
 };
 
-Client.prototype.close = function () {
+Client.prototype.reconnect = function () {
+  return this.connect(this.host, this.options, this.callback);
+};
+
+Client.prototype.disconnect = function () {
   return this.socket.disconnect();
 };
 
@@ -56,6 +73,13 @@ State.prototype.init = function (cid, client) {
   this.cid      = cid;
   this.uid      = 0;
   this.client   = client;
+};
+
+State.prototype.reinit = function (cid, client, state) {
+  console.log('reiniting');
+  this.cid      = cid;
+  this.client   = client;
+  this.yieldPull(state);
 };
 
 State.prototype.createUID = function (uid) {
@@ -129,7 +153,15 @@ CClient.prototype.connect = function (host, options, callback) {
 };
 
 CClient.prototype.close = function () {
-  return this.client.close();
+  this.client.disconnect();
+};
+
+CClient.prototype.disconnect = function () {
+  this.client.disconnect();
+};
+
+CClient.prototype.reconnect = function () {
+  this.client.reconnect();
 };
 },{"./Client":1,"./ClientState":2}],4:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypesClient = require ('./CloudTypesClient');
@@ -4884,9 +4916,9 @@ State.prototype._join = function (rev, target) {
       var joinee = self.getProperty(property).get(index);
       var t = target.getProperty(property).get(index);
 
-      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
+//      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
       joinee._join(joiner, t);
-      console.log("joined: " + require('util').inspect(t));
+//      console.log("joined: " + require('util').inspect(t));
     });
   });
   master.forEachEntity(function (entity) {

@@ -8,16 +8,18 @@ var util        = require('util');
 module.exports = CArray;
 
 // indexNames:  { string: IndexType }
+// when declared in a State, the state will add itself and the declared name for this CArray as properties
+// to the CArray object.
 // todo: create copy of initializers
-function CArray(name, indexes, properties) {
-  this.name       = name;
+function CArray(indexes, properties) {
   this.indexes    = (indexes instanceof Indexes) ? indexes : new Indexes(indexes);
   this.properties = properties || new Properties();
+  this.isProxy    = false;  // set true by State if used as proxy for global CloudType
 }
 
 // properties: { string: string {"int", "string"} }
-CArray.declare = function (name, indexDeclarations, propertyDeclarations) {
-  var carray = new CArray(name, indexDeclarations);
+CArray.declare = function (indexDeclarations, propertyDeclarations) {
+  var carray = new CArray(indexDeclarations);
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];
     carray.addProperty(new Property(propName, cTypeName, carray));
@@ -33,6 +35,10 @@ CArray.prototype.get = function (indexes) {
   return new CArrayEntry(this, indexes);
 };
 
+CArray.prototype.entries = function (propertyName) {
+  return this.properties.get(propertyName).entries();
+};
+
 CArray.prototype.getProperty = function (property) {
   return this.properties.get(property);
 };
@@ -43,25 +49,26 @@ CArray.prototype.addProperty = function (property) {
 
 CArray.prototype.fork = function () {
   var fIndexes = this.indexes.fork();
-  var cArray = new CArray(this.name, fIndexes);
-  var fProperties = this.properties.fork(cArray);
-  cArray.properties = fProperties;
+  var cArray = new CArray(fIndexes);
+  cArray.properties = this.properties.fork(cArray);
+  cArray.isProxy = this.isProxy;
   return cArray;
 };
 
 
 CArray.prototype.toJSON = function () {
   return {
-    name        : this.name,
     type        : 'Array',
     indexes     : this.indexes.toJSON(),
-    properties  : this.properties.toJSON()
+    properties  : this.properties.toJSON(),
+    isProxy     : this.isProxy
   };
 };
 
 CArray.fromJSON = function (json) {
-  var cArray = new CArray(json.name);
+  var cArray = new CArray();
   cArray.indexes = Indexes.fromJSON(json.indexes);
   cArray.properties = Properties.fromJSON(json.properties, cArray);
+  cArray.isProxy = json.isProxy;
   return cArray;
 };

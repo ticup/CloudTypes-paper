@@ -7,3 +7,5 @@ exports.createServer = function (state) {
 
 exports.CInt    = require('../shared/CInt');
 exports.CString = require('../shared/CString');
+exports.CEntity = require('../shared/CArray').declare;
+exports.CArray  = require('../shared/CEntity').declare;

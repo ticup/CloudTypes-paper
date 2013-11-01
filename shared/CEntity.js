@@ -9,16 +9,18 @@ module.exports = CEntity;
 var OK = 'ok';
 var DELETED = 'deleted';
 
-function CEntity(name, indexes, properties, states) {
-  CArray.call(this, name, indexes, properties);
+// when declared in a State, the state will add itself and the declared name for this CArray as properties
+// to the CEntity object.
+function CEntity(indexes, properties, states) {
+  CArray.call(this, indexes, properties);
   this.states = {} || states;
   this.uid = 0;
 }
-
 CEntity.prototype = Object.create(CArray.prototype);
 
-CEntity.declare = function (name, indexDeclarations, propertyDeclarations) {
-  var cEntity = new CEntity(name, [{uid: 'String'}].concat(indexDeclarations));
+
+CEntity.declare = function (indexDeclarations, propertyDeclarations) {
+  var cEntity = new CEntity([{uid: 'String'}].concat(indexDeclarations));
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];
     cEntity.addProperty(new Property(propName, cTypeName, cEntity));
@@ -108,23 +110,29 @@ CEntity.prototype.deleted = function (idx) {
 
 CEntity.prototype.fork = function () {
   var fIndexes = this.indexes.fork();
-  var cEntity = new CEntity(this.name, fIndexes);
+  var cEntity = new CEntity(fIndexes);
   cEntity.properties = this.properties.fork(cEntity);
   cEntity.states     = this.states;
   return cEntity;
 };
 
 CEntity.fromJSON = function (json) {
-  var cEntity = new CEntity(json.name);
+  var cEntity = new CEntity();
   cEntity.indexes = Indexes.fromJSON(json.indexes);
   cEntity.properties = Properties.fromJSON(json.properties, cEntity);
-  cEntity.states = json.states;
+  cEntity.states = {};
+  Object.keys(json.states).forEach(function (index) {
+    cEntity.states[index] = json.states[index];
+  });
   return cEntity;
 };
 
 CEntity.prototype.toJSON = function () {
-  var json = CArray.prototype.toJSON.call(this);
-  json.states = this.states;
-  json.type = 'Entity';
-  return json;
+  return {
+    type        : 'Entity',
+    indexes     : this.indexes.toJSON(),
+    properties  : this.properties.toJSON(),
+    states      : this.states
+
+  };
 };

@@ -24,14 +24,14 @@ Server.prototype.open = function (target) {
     socket.emit('init', { cid: cid++, state: self.state.fork() });
 
     socket.on('YieldPush', function (stateJson, yieldPull) {
-      console.log('received YieldPush on server: ');
+//      console.log('received YieldPush on server: ');
       var state = State.fromJSON(stateJson);
-      state.print();
-      console.log("JOINING WITH SERVER: ");
-      self.state.print();
+//      state.print();
+//      console.log("JOINING WITH SERVER: ");
+//      self.state.print();
       self.state.join(state);
-      console.log("JOINED STATE: ");
-      self.state.print();
+//      console.log("JOINED STATE: ");
+//      self.state.print();
       yieldPull(self.state.fork());
     });
 

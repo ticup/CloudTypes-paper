@@ -17,13 +17,13 @@ describe('Property state independent operations', function () {
     state = new State();
     var props = {};
     props[propName] = ctypeName;
-    cArray = CArray.declare("Customer", [], props);
-    state.declare(cArray);
+    cArray = CArray.declare([], props);
+    state.declare("Customer", cArray);
     name = state.arrays.Customer.properties.properties[propName];
   });
 
   describe('#new(name, ctypeName, cArray)', function () {
-    cArray2   = new CArray("Customer", [], {});
+    cArray2   = new CArray([], {});
     property = new Property(propName, ctypeName, cArray2);
 
     it('should create a new Property object', function () {

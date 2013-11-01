@@ -11,10 +11,9 @@ var util        = require('util');
 
 
 function createCArray() {
-  var name = "Grocery";
   var indexNames = [{name: "String"}];
   var properties = {toBuy: "CInt", shop: "CString"};
-  var array = CArray.declare(name, indexNames, properties);
+  var array = CArray.declare(indexNames, properties);
   return array;
 }
 
@@ -26,17 +25,12 @@ describe('CArray', function () {
   });
 
   // Private
-  describe('#new(name, indexes, properties)', function () {
-    var name = "Grocery";
+  describe('#new(indexes, properties)', function () {
     var indexes = [{name: "String"}];
     var properties = {toBuy: "CInt"};
-    var array = new CArray(name, indexes, properties);
+    var array = new CArray(indexes, properties);
     it('should create a new CArray object', function () {
       array.should.be.an.instanceOf(CArray);
-    });
-    it('should have name property', function () {
-      array.should.have.property('name');
-      array.name.should.equal(name);
     });
     it('should have properties property', function () {
       array.should.have.property('properties');
@@ -49,17 +43,12 @@ describe('CArray', function () {
   });
 
   // Private
-  describe('#new(name, indexes, properties)', function () {
-    var name = "Grocery";
+  describe('#new(indexes, properties)', function () {
     var indexes = new Indexes();
     var properties = {toBuy: "CInt"};
-    var array = new CArray(name, indexes, properties);
+    var array = new CArray(indexes, properties);
     it('should create a new CArray object', function () {
       array.should.be.an.instanceOf(CArray);
-    });
-    it('should have name property', function () {
-      array.should.have.property('name');
-      array.name.should.equal(name);
     });
     it('should have properties property', function () {
       array.should.have.property('properties');
@@ -102,10 +91,8 @@ describe('CArray', function () {
     it('should create a JSON representation', function () {
       var json = array.toJSON();
       should.exist(json);
-      should.exist(json.name);
       should.exist(json.indexes);
       should.exist(json.properties);
-      json.name.should.equal("Grocery");
       json.indexes.should.eql(array.indexes.toJSON());
       json.properties.should.eql(array.properties.toJSON())
     });
@@ -117,17 +104,12 @@ describe('CArray', function () {
   });
 
   // Public
-  describe('#declare(name, indexNames, properties)', function () {
-    var name = "Grocery";
+  describe('#declare(indexNames, properties)', function () {
     var indexNames = [{name: "String"}];
     var properties = {toBuy: "CInt"};
-    var array = CArray.declare(name, indexNames, properties);
+    var array = CArray.declare(indexNames, properties);
     it('should create a new CArray object', function () {
       array.should.be.an.instanceOf(CArray);
-    });
-    it('should have name property', function () {
-      array.should.have.property('name');
-      array.name.should.equal(name);
     });
     it('should have indexes property', function () {
       array.should.have.property('indexes');
@@ -147,10 +129,10 @@ describe('CArray', function () {
       array.forEachProperty(function (property) {
         property.should.be.an.instanceof(Property);
         if (property.name === "toBuy")
-          property.ctypeName = "CInt";
+          property.ctypeName.should.equal("CInt");
 
         if (property.name === "shop")
-          property.ctypeName = "CString";
+          property.ctypeName.should.equal("CString");
        ctr++;
       });
       ctr.should.equal(2);

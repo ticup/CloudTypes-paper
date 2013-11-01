@@ -29,7 +29,6 @@ var cstring3 = new CString();
 exports.unchanged = createMap();
 
 exports.groceryUnchanged = {
-  name        : 'Grocery',
   type        : 'Array',
   indexes     : {
     names: ['name'],
@@ -46,11 +45,11 @@ exports.groceryUnchanged = {
         'Potatoes': cint3.toJSON()
       }
     }
-  ]
+  ],
+  isProxy: false
 };
 
 exports.productUnchanged = {
-  name        : 'Product',
   type        : 'Array',
   indexes     : {
     names: ['id'],
@@ -75,11 +74,11 @@ exports.productUnchanged = {
         '2': cint3.toJSON()
       }
     }
-  ]
+  ],
+  isProxy: false
 };
 
 exports.customerUnchanged = {
-  name        : 'Customer',
   type        : 'Entity',
   indexes     : {
     names: ['uid'],
@@ -100,7 +99,6 @@ exports.customerUnchanged = {
 };
 
 exports.orderUnchanged = {
-  name        : 'Order',
   type        : 'Entity',
   indexes     : {
     names: ['uid', 'customer'],
@@ -162,7 +160,6 @@ function createMap() {
 
 
 exports.groceryPoluted = {
-  name        : 'Grocery',
   type        : 'Array',
   indexes     : {
     names: ['name'],
@@ -174,10 +171,10 @@ exports.groceryPoluted = {
       type: 'CInt',
       values: {}
     }
-  ]
+  ],
+  isProxy: false
 };
 exports.productPoluted = {
-  name        : 'Product',
   type        : 'Array',
   indexes     : {
     names: ['id'],
@@ -194,11 +191,11 @@ exports.productPoluted = {
       type: 'CInt',
       values: {}
     }
-  ]
+  ],
+  isProxy: false
 };
 
 exports.groceryChanged = {
-  name        : 'Grocery',
   type        : 'Array',
   indexes     : {
     names: ['name'],
@@ -216,10 +213,10 @@ exports.groceryChanged = {
         'Potatoes': cint3.toJSON()
       }
     }
-  ]
+  ],
+  isProxy: false
 };
 exports.productChanged = {
-  name   : 'Product',
   type   : 'Array',
   indexes: {
     names: ['id'],
@@ -245,11 +242,11 @@ exports.productChanged = {
         '2': cint3.toJSON()
       }
     }
-  ]
+  ],
+  isProxy: false
 };
 
 exports.customerChanged = {
-  name        : 'Customer',
   type        : 'Entity',
   indexes     : {
     names: ['uid'],
@@ -277,7 +274,6 @@ exports.customerChanged = {
 };
 
 exports.orderChanged = {
-  name        : 'Order',
   type        : 'Entity',
   indexes     : {
     names: ['uid', 'customer'],
@@ -333,28 +329,28 @@ exports.entities = [
 ];
 
 exports.stateUnchanged = {
-  arrays: [
-    exports.groceryUnchanged,
-    exports.productUnchanged,
-    exports.customerUnchanged,
-    exports.orderUnchanged
-  ]
+  arrays: {
+    "Grocery" : exports.groceryUnchanged,
+    "Product" : exports.productUnchanged,
+    "Customer": exports.customerUnchanged,
+    "Order"   : exports.orderUnchanged
+  }
 };
 
 exports.statePoluted = {
-  arrays: [
-    exports.groceryPoluted,
-    exports.productPoluted
-  ]
+  arrays: {
+    "Grocery": exports.groceryPoluted,
+    "Product": exports.productPoluted
+  }
 };
 
 exports.stateChanged = {
-  arrays: [
-    exports.groceryChanged,
-    exports.productChanged,
-    exports.customerChanged,
-    exports.orderChanged
-  ]
+  arrays: {
+    "Grocery" : exports.groceryChanged,
+    "Product" : exports.productChanged,
+    "Customer": exports.customerChanged,
+    "Order"   : exports.orderChanged
+  }
 }
 
 exports.states = [

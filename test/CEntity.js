@@ -14,24 +14,18 @@ describe('CEntity state independent operations', function () {
   var entity;
 
   beforeEach(function () {
-    var name = "Consumer";
     var indexNames = [{name: "String"}];
     var properties = {address: "CString"};
-    entity = CEntity.declare(name, indexNames, properties);
+    entity = CEntity.declare(indexNames, properties);
   });
 
   // Private
-  describe('#new(name, indexDeclarations, propertyDeclarations)', function () {
-    var name = "Consumer";
+  describe('#new(indexDeclarations, propertyDeclarations)', function () {
     var indexNames = [{name: "foo", type: "String"}];
     var properties = {address: "CString"};
-    var entity = new CEntity(name, indexNames, properties);
+    var entity = new CEntity(indexNames, properties);
     it('should create a new CEntity object', function () {
       entity.should.be.an.instanceOf(CEntity);
-    });
-    it('should have name property', function () {
-      entity.should.have.property('name');
-      entity.name.should.equal(name);
     });
     it('should have properties property', function () {
       entity.should.have.property('properties');
@@ -44,17 +38,12 @@ describe('CEntity state independent operations', function () {
   });
 
   // Private
-  describe('#new(name, indexes, PropertyDeclarations)', function () {
-    var name = "Grocery";
+  describe('#new(indexes, PropertyDeclarations)', function () {
     var indexes = new Indexes();
     var properties = {toBuy: "CInt"};
-    var entity = new CEntity(name, indexes, properties);
+    var entity = new CEntity(indexes, properties);
     it('should create a new CEntity object', function () {
       entity.should.be.an.instanceOf(CEntity);
-    });
-    it('should have name property', function () {
-      entity.should.have.property('name');
-      entity.name.should.equal(name);
     });
     it('should have properties property', function () {
       entity.should.have.property('properties');
@@ -95,10 +84,8 @@ describe('CEntity state independent operations', function () {
     it('should create a JSON representation', function () {
       var json = entity.toJSON();
       should.exist(json);
-      should.exist(json.name);
       should.exist(json.indexes);
       should.exist(json.properties);
-      json.name.should.equal("Consumer");
       json.indexes.should.eql(entity.indexes.toJSON());
       json.properties.should.eql(entity.properties.toJSON())
     });
@@ -110,17 +97,12 @@ describe('CEntity state independent operations', function () {
   });
 
   // Public
-  describe('#declare(name, indexNames, properties)', function () {
-    var name = "Consumer";
+  describe('#declare(indexNames, properties)', function () {
     var indexNames = [{name: "String"}];
     var properties = {address: "CString"};
-    var entity2 = CEntity.declare(name, indexNames, properties);
+    var entity2 = CEntity.declare(indexNames, properties);
     it('should create a new CEntity object', function () {
       entity2.should.be.an.instanceOf(CEntity);
-    });
-    it('should have name property', function () {
-      entity2.should.have.property('name');
-      entity2.name.should.equal(name);
     });
     it('should have indexes property', function () {
       entity2.should.have.property('indexes');

@@ -15,12 +15,35 @@ function State(arrays, entities) {
 //  return op.apply(this.arrays[name].getProperty(propertyName).get(indexes), [].slice.call(arguments, 4))
 //};
 State.prototype.get = function (name) {
+  var array = this.arrays[name];
+  if (typeof array !== 'undefined' && array.isProxy) {
+    return array.getProperty('value').get();
+  }
   return this.arrays[name];
 };
 
-State.prototype.declare = function (array) {
-  array.state = this;
-  return this.arrays[array.name] = array;
+State.prototype.declare = function (name, array) {
+
+  // CArray or CEntity
+  if (array instanceof CArray) {
+    array.state = this;
+    array.name  = name;
+    return this.arrays[name] = array;
+
+
+  }
+  // global (CloudType) => create proxy CArray
+  if (typeof array.prototype !== 'undefined' && array.prototype instanceof CloudType) {
+    var CType = array;
+    array = CArray.declare([], {value: CType.name});
+    array.state = this;
+    array.name  = name;
+    array.isProxy = true;
+    return this.arrays[name] = array;
+  }
+  // Either declare CArray (CEntity is also a CArray) or CloudType, nothing else.
+  console.log(require('util').inspect(array));
+  throw "Need a CArray or CloudType to declare: " + array;
 };
 
 State.prototype.isDefault = function (cType) {
@@ -30,25 +53,28 @@ State.prototype.isDefault = function (cType) {
 /* Private */
 State.prototype.toJSON = function () {
   var self = this;
+  var arrays = {};
+  Object.keys(self.arrays).forEach(function (name) {
+    return arrays[name] = self.arrays[name].toJSON();
+  });
   return {
-    arrays: Object.keys(self.arrays).map(function (name) {
-      return self.arrays[name].toJSON();
-    })
+    arrays: arrays
   };
 };
 
 State.fromJSON = function (json) {
   var array, state;
   state = new this();
-  json.arrays.forEach(function (arrayJson) {
+  Object.keys(json.arrays).forEach(function (name) {
+    var arrayJson = json.arrays[name];
     if (arrayJson.type === 'Entity') {
       array = CEntity.fromJSON(arrayJson);
     } else if (arrayJson.type === 'Array') {
       array = CArray.fromJSON(arrayJson);
     } else {
-      throw "Unknown array in state: " + json.type;
+      throw "Unknown type in state: " + json.type;
     }
-    state.declare(array);
+    state.declare(name, array);
   });
   return state;
 };
@@ -142,11 +168,12 @@ State.prototype._join = function (rev, target) {
     });
   });
   rev.forEachEntity(function (entity) {
+    var jEntity = self.get(entity.name);
+    var tEntity = target.get(entity.name);
     entity.forEachState(function (index) {
-      var jEntity = self.get(entity.name);
-      var t = target.get(entity.name);
-      t.setMax(entity, jEntity, index);
+      tEntity.setMax(entity, jEntity, index);
     });
+
   });
   target.propagate();
 };
@@ -154,6 +181,7 @@ State.prototype._join = function (rev, target) {
 State.prototype.joinIn = function (rev) {
   return this._join(rev, rev);
 };
+
 State.prototype.join = function (rev) {
   return this._join(rev, this);
 };
@@ -163,7 +191,7 @@ State.prototype.fork = function () {
   var forker = this;
   forker.forEachArray(function (cArray) {
     var fArray = cArray.fork();
-    forked.declare(fArray);
+    forked.declare(cArray.name, fArray);
   });
   return forked;
 };

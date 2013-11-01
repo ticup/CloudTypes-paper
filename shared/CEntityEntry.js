@@ -10,8 +10,6 @@ function CEntityEntry(cEntity, indexes) {
 
 
 CEntityEntry.prototype.get = function (property) {
-  console.log('getting from entity ' + this.cEntity.name + ': ' + property);
-  console.log(this.cEntity.getProperty(property));
   return this.cEntity.getProperty(property).saveGet(this.indexes);
 };
 

@@ -22,6 +22,10 @@ Indexes.prototype.getType = function (position) {
   return this.types[position];
 };
 
+Indexes.prototype.getPositionOf = function (name) {
+  return this.names.indexOf(name);
+};
+
 Indexes.prototype.get = function (indexes) {
   var index = Indexes.createIndex(indexes);
   return index;

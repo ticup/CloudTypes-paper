@@ -11,14 +11,16 @@ function CServer(state) {
 CServer.prototype.publish = function (target) {
   this.server.open(target);
   this.state.published(this.server);
+  return this;
 };
 
 CServer.prototype.close = function () {
   this.server.close();
 };
 
-CServer.prototype.declare = function (array) {
-  this.state.declare(array);
+CServer.prototype.declare = function (name, array) {
+  this.state.declare(name, array);
+  return this;
 };
 
 CServer.prototype.get = function (name) {

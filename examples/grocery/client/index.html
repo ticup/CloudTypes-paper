@@ -1,9 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CloudTypes Grocery List Example</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>CloudTypes: Grocery List Example</title>
+
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
+
+  <!-- Custom styles for this template -->
+  <link href="grocery.css" rel="stylesheet">
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+  <![endif]-->
 </head>
+
 <body>
 
+<div id="wrap">
+  <div class="container">
+
+  <div class="text-center">
+    <h1>CloudTypes Example: Grocery List</h1>
+    <p class="lead">Add new groceries using the form at the bottom <br> or mark the amount you bought of an item by clicking it in the list.</p>
+
+    <div class="grocerylist center-block"></div>
+    <form id="newgroceryform" role="form" class="form-inline">
+      <div class="form-group">
+        <label class="sr-only" for="newgroceryname">Grocery name</label>
+        <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
+        <input type="text" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
+      </div>
+      <div class="form-group">
+        <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+
+</div>
+
+<div id="footer">
+  <div class="container">
+    <p class="text-muted credit">Created by <a href="http://www.github.com/ticup">Tim Coppieters</a></p>
+  </div>
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.1/js/bootstrap.min.js"></script>
+<script src="../../../client/bundle.js"></script>
+<script src="grocery.js"></script>
 </body>
 </html>

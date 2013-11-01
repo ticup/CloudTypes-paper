@@ -21,8 +21,12 @@ Property.prototype.saveGet = function (indexes) {
 };
 
 Property.prototype.get = function (indexes) {
-  var index = this.indexes.get(indexes);
-  var ctype = this.values[index];
+  var index, ctype;
+  if (typeof indexes === 'undefined')
+    index = 'singleton';
+  else
+    index = this.indexes.get(indexes);
+  ctype = this.values[index];
   if (typeof ctype === 'undefined') {
     ctype = this.values[index] = new (CloudType.fromTag(this.ctypeName))();
   }
@@ -37,7 +41,7 @@ Property.prototype.entries = function () {
 //    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
 //    console.log("default: " + self.cArray.state.isDefault(self.get(index)));
     if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.get(index))) {
-      result.push(index);
+      result.push(self.cArray.get(index));
     }
   });
   return result;

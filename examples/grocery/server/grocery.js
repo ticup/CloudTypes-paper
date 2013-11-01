@@ -1,28 +1,14 @@
+/**
+ * Created by ticup on 31/10/13.
+ */
 
-// HTTP serving code
-/////////////////////
-var http  = require('http');
-var static = require('node-static');
+// CloudTypes Grocery Example Server
+////////////////////////////////////
+// note: don't forget to run a static file server, see README->Examples
+var port = 8080;
+var CloudTypes = require('../../../server/main.js');
+var server = CloudTypes.createServer();
 
-// create static server for public files
-var file = new static.Server('./');
-
-// http server
-var app = http.createServer(function (req, res) {
-  console.log(req.url);
-  file.serve(req, res);
-});
-app.listen(8090);
-
-
-
-
-// Actual CloudTypes Code
-//////////////////////////
-var CloudTypes = require('../../../server/main.js').createServer();
-cloudTypes.declare('totalItems',
-                   new CloudTypes.CInt());
-cloudTypes.declare('Grocery',
-                    new CloudTypes.Entity(['name'],
-                                          ['toBuy']));
-cloudTypes.publish(8090);
+server.declare('totalItems', CloudTypes.CInt)
+      .declare('Grocery', CloudTypes.CEntity([{name: 'String'}], {toBuy: 'CInt'}))
+      .publish(port);

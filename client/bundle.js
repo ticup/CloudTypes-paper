@@ -44,14 +44,13 @@ Client.prototype.flushPush = function (pushState, flushPull) {
     flushPull(pullState);
   });
 };
-},{"../shared/State":14,"./ClientState":2,"socket.io-client":5}],2:[function(require,module,exports){
+},{"../shared/State":16,"./ClientState":2,"socket.io-client":5}],2:[function(require,module,exports){
 var State = require('../shared/State');
 
 module.exports = State;
 
 
 State.prototype.init = function (cid, client) {
-  console.log("INITING WITH: " + cid);
   this.pending  = false;
   this.received = false;
   this.cid      = cid;
@@ -74,18 +73,18 @@ State.prototype.yieldPull = function (state) {
 State.prototype.yield = function () {
   // (B) Revision from the server arrived, merge
   if (this.received) {
-    console.log('yield: got revision from server');
+//    console.log('yield: got revision from server');
     this.toJoin.joinIn(this);
     this.received = false;
     return this;
   }
   // (C) expecting a revision, but not present yet
   if (this.pending) {
-    console.log('yield: waiting for server response');
+//    console.log('yield: waiting for server response');
     return this;
   }
   // (A) Not expecting server response, send state to server
-  console.log('yield: pushing to server');
+//  console.log('yield: pushing to server');
   this.client.yieldPush(this);
   this.applyFork();
   this.pending  = true;
@@ -104,7 +103,7 @@ State.prototype.flush = function (callback, timeout) {
   this.client.flushPush(this, function flushPull(state) {
     // should actually replace this state,
     // but since there should be no operations done merging is the same.
-    self.print();
+//    self.print();
     console.log('received flushpull on client');
 
     state.joinIn(self);
@@ -115,7 +114,7 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":14}],3:[function(require,module,exports){
+},{"../shared/State":16}],3:[function(require,module,exports){
 var Client = require('./Client');
 var ClientState  = require('./ClientState');
 
@@ -135,15 +134,20 @@ CClient.prototype.close = function () {
 },{"./Client":1,"./ClientState":2}],4:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypesClient = require ('./CloudTypesClient');
 
-var CloudTypes = {};
-global.CloudTypes = CloudTypes;
+var CloudTypes = {
+  CInt    : require('../shared/CInt'),
+  CString : require('../shared/CString'),
+  CArray  : require('../shared/CArray'),
+  CEntity : require('../shared/CEntity'),
 
-CloudTypes.createClient = function () {
-  return new CloudTypesClient();
+  createClient: function () {
+    return new CloudTypesClient();
+  }
 };
 
+global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"./CloudTypesClient":3}],5:[function(require,module,exports){
+},{"../shared/CArray":6,"../shared/CEntity":8,"../shared/CInt":10,"../shared/CString":11,"./CloudTypesClient":3}],5:[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -4028,16 +4032,18 @@ var util        = require('util');
 module.exports = CArray;
 
 // indexNames:  { string: IndexType }
+// when declared in a State, the state will add itself and the declared name for this CArray as properties
+// to the CArray object.
 // todo: create copy of initializers
-function CArray(name, indexes, properties) {
-  this.name       = name;
+function CArray(indexes, properties) {
   this.indexes    = (indexes instanceof Indexes) ? indexes : new Indexes(indexes);
   this.properties = properties || new Properties();
+  this.isProxy    = false;  // set true by State if used as proxy for global CloudType
 }
 
 // properties: { string: string {"int", "string"} }
-CArray.declare = function (name, indexDeclarations, propertyDeclarations) {
-  var carray = new CArray(name, indexDeclarations);
+CArray.declare = function (indexDeclarations, propertyDeclarations) {
+  var carray = new CArray(indexDeclarations);
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];
     carray.addProperty(new Property(propName, cTypeName, carray));
@@ -4053,6 +4059,10 @@ CArray.prototype.get = function (indexes) {
   return new CArrayEntry(this, indexes);
 };
 
+CArray.prototype.entries = function (propertyName) {
+  return this.properties.get(propertyName).entries();
+};
+
 CArray.prototype.getProperty = function (property) {
   return this.properties.get(property);
 };
@@ -4063,53 +4073,59 @@ CArray.prototype.addProperty = function (property) {
 
 CArray.prototype.fork = function () {
   var fIndexes = this.indexes.fork();
-  var cArray = new CArray(this.name, fIndexes);
-  var fProperties = this.properties.fork(cArray);
-  cArray.properties = fProperties;
+  var cArray = new CArray(fIndexes);
+  cArray.properties = this.properties.fork(cArray);
+  cArray.isProxy = this.isProxy;
   return cArray;
 };
 
 
 CArray.prototype.toJSON = function () {
   return {
-    name        : this.name,
     type        : 'Array',
     indexes     : this.indexes.toJSON(),
-    properties  : this.properties.toJSON()
+    properties  : this.properties.toJSON(),
+    isProxy     : this.isProxy
   };
 };
 
 CArray.fromJSON = function (json) {
-  var cArray = new CArray(json.name);
+  var cArray = new CArray();
   cArray.indexes = Indexes.fromJSON(json.indexes);
   cArray.properties = Properties.fromJSON(json.properties, cArray);
+  cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":7,"./CloudType":10,"./Indexes":11,"./Properties":12,"./Property":13,"util":16}],7:[function(require,module,exports){
+},{"./CArrayEntry":7,"./CloudType":12,"./Indexes":13,"./Properties":14,"./Property":15,"util":18}],7:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
 
 function CArrayEntry(cArray, indexes) {
   this.cArray = cArray;
-  this.indexes = indexes;
+  this.indexes = Indexes.getIndexes(indexes);
 }
 
 CArrayEntry.prototype.get = function (property) {
-  console.log('getting ' + property);
-  console.log(this.cArray.getProperty(property));
   return this.cArray.getProperty(property).saveGet(this.indexes);
 };
 
 CArrayEntry.prototype.forEachIndex = function (callback) {
   var self = this;
   var i = 0;
-  Indexes.getIndexes(this.indexes).forEach(function (index) {
+  this.indexes.forEach(function (index) {
     var type = self.cArray.indexes.getType(i++);
     callback(type, index);
   });
 };
-},{"./Indexes":11}],8:[function(require,module,exports){
+
+CArrayEntry.prototype.key = function (name) {
+  var position = this.cArray.indexes.getPositionOf(name);
+  if (position === -1)
+    return null;
+  return this.indexes[position];
+};
+},{"./Indexes":13}],8:[function(require,module,exports){
 var CArray     = require('./CArray');
 var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
@@ -4121,16 +4137,18 @@ module.exports = CEntity;
 var OK = 'ok';
 var DELETED = 'deleted';
 
-function CEntity(name, indexes, properties, states) {
-  CArray.call(this, name, indexes, properties);
+// when declared in a State, the state will add itself and the declared name for this CArray as properties
+// to the CEntity object.
+function CEntity(indexes, properties, states) {
+  CArray.call(this, indexes, properties);
   this.states = {} || states;
   this.uid = 0;
 }
-
 CEntity.prototype = Object.create(CArray.prototype);
 
-CEntity.declare = function (name, indexDeclarations, propertyDeclarations) {
-  var cEntity = new CEntity(name, [{uid: 'String'}].concat(indexDeclarations));
+
+CEntity.declare = function (indexDeclarations, propertyDeclarations) {
+  var cEntity = new CEntity([{uid: 'String'}].concat(indexDeclarations));
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];
     cEntity.addProperty(new Property(propName, cTypeName, cEntity));
@@ -4220,28 +4238,34 @@ CEntity.prototype.deleted = function (idx) {
 
 CEntity.prototype.fork = function () {
   var fIndexes = this.indexes.fork();
-  var cEntity = new CEntity(this.name, fIndexes);
+  var cEntity = new CEntity(fIndexes);
   cEntity.properties = this.properties.fork(cEntity);
   cEntity.states     = this.states;
   return cEntity;
 };
 
 CEntity.fromJSON = function (json) {
-  var cEntity = new CEntity(json.name);
+  var cEntity = new CEntity();
   cEntity.indexes = Indexes.fromJSON(json.indexes);
   cEntity.properties = Properties.fromJSON(json.properties, cEntity);
-  cEntity.states = json.states;
+  cEntity.states = {};
+  Object.keys(json.states).forEach(function (index) {
+    cEntity.states[index] = json.states[index];
+  });
   return cEntity;
 };
 
 CEntity.prototype.toJSON = function () {
-  var json = CArray.prototype.toJSON.call(this);
-  json.states = this.states;
-  json.type = 'Entity';
-  return json;
+  return {
+    type        : 'Entity',
+    indexes     : this.indexes.toJSON(),
+    properties  : this.properties.toJSON(),
+    states      : this.states
+
+  };
 };
 
-},{"./CArray":6,"./CEntityEntry":9,"./Indexes":11,"./Properties":12,"./Property":13}],9:[function(require,module,exports){
+},{"./CArray":6,"./CEntityEntry":9,"./Indexes":13,"./Properties":14,"./Property":15}],9:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CEntityEntry;
@@ -4254,8 +4278,6 @@ function CEntityEntry(cEntity, indexes) {
 
 
 CEntityEntry.prototype.get = function (property) {
-  console.log('getting from entity ' + this.cEntity.name + ': ' + property);
-  console.log(this.cEntity.getProperty(property));
   return this.cEntity.getProperty(property).saveGet(this.indexes);
 };
 
@@ -4271,7 +4293,205 @@ CEntityEntry.prototype.forEachIndex = function (callback) {
 CEntityEntry.prototype.delete = function () {
   return this.cEntity.delete(this);
 };
-},{"./Indexes":11}],10:[function(require,module,exports){
+},{"./Indexes":13}],10:[function(require,module,exports){
+var CloudType = require('./CloudType');
+var util = require('util');
+module.exports = CInt;
+
+
+function CInt(base, offset, isSet) {
+  this.base = base || 0;
+  this.offset = offset || 0;
+  this.isSet = isSet || false;
+}
+
+// put CloudType in prototype chain.
+CInt.prototype = Object.create(CloudType.prototype);
+CInt.prototype.tag = "CInt";
+
+// register for CloudType.fromJSON 
+CloudType.register(CInt);
+CInt.fromJSON = function (json) {
+  return new CInt(json.base, json.offset, json.isSet);
+};
+
+// used by the toJSON method of the CloudType prototype.
+CInt.prototype._toJSON = function () {
+  return {
+    base: this.base,
+    offset: this.offset,
+    isSet: this.isSet
+  };
+};
+
+// semantic operations
+CInt.prototype.set = function (base) {
+  if (typeof base !== 'number')
+    throw "CInt::set(base) : base should be of type number, given: " + base;
+  this.offset = 0;
+  this.base = base;
+  this.isSet = true;
+};
+
+CInt.prototype.get = function () {
+  return (this.base + this.offset);
+};
+
+CInt.prototype.add = function (offset) {
+  if (typeof offset !== 'number')
+    throw "CInt::add(base) : offset should be of type number, given: " + offset;
+  this.offset += offset;
+};
+
+// Defining _join(cint, target) provides the join and joinIn methods
+// by the CloudType prototype.
+CInt.prototype._join = function (cint, target) {
+  if (cint.isSet) {
+    target.isSet  = true;
+    target.base   = cint.base;
+    target.offset = cint.offset;
+  } else {
+    target.isSet  = this.isSet;
+    target.base   = this.base;
+    target.offset = this.offset + cint.offset;
+  }
+};
+
+CInt.prototype.fork = function () {
+  var cint = new CInt(this.base + this.offset, 0, false);
+  this.applyFork();
+  return cint;
+};
+
+CInt.prototype.applyFork = function () {
+  this.base = this.base + this.offset;
+  this.offset = 0;
+  this.isSet = false;
+  return this;
+};
+
+CInt.prototype.replaceBy = function (cint) {
+  this.base   = cint.base;
+  this.offset = cint.offset;
+  this.isSet  = cint.isSet;
+};
+
+CInt.prototype.isDefault = function () {
+  return (this.get() === 0);
+};
+},{"./CloudType":12,"util":18}],11:[function(require,module,exports){
+var CloudType = require('./CloudType');
+var util = require('util');
+module.exports = CString;
+
+
+function CString(value, written, cond) {
+  this.value   = value   || '';
+  this.written = written || false;
+  this.cond    = cond    || false;
+}
+
+// put CloudType in prototype chain.
+CString.prototype = Object.create(CloudType.prototype);
+CString.prototype.tag = "CString";
+
+// register for CloudType.fromJSON 
+CloudType.register(CString);
+CString.fromJSON = function (json) {
+  return new CString(json.value, json.written, json.cond);
+};
+
+// used by the toJSON method of the CloudType prototype.
+CString.prototype._toJSON = function () {
+  return {
+    value: this.value,
+    written: this.written,
+    cond: this.cond
+  };
+};
+
+// semantic operations
+CString.prototype.set = function (value) {
+  this.value   = value;
+  this.written = 'wr';
+};
+
+CString.prototype.get = function () {
+  return this.value;
+};
+
+CString.prototype.setIfEmpty = function (value) {
+  if (this.written === 'wr' && this.value === '') {
+    this.value   = value;
+    this.written = 'wr';
+    this.cond    = false;
+
+  } else if (!this.written && this.value === '') {
+    this.value   = value;
+    this.written = 'cond';
+    this.cond    = value;
+
+  } else if (!this.written && this.value !== '') {
+    this.written = 'cond';
+    this.cond    = value;
+
+  } else {
+    // remain current values
+  }
+};
+
+// Defining _join(cstring, target) provides the join and joinIn methods
+// by the CloudType prototype.
+CString.prototype._join = function (cstring, target) {
+  if (cstring.written === 'wr') {
+    target.written = 'wr';
+    target.value   = cstring.value;
+    target.cond    = false;
+
+  } else if (this.written === 'wr' && this.value === '' && cstring.written === 'cond') {
+    target.written = 'wr';
+    target.value   = cstring.cond;
+    target.cond    = false;
+
+  } else if (!this.written && this.value === '' && cstring.written === 'cond') {
+    target.written = 'cond';
+    target.cond    = cstring.cond;
+    target.value   = cstring.cond;
+
+  } else if (!this.written && this.value !== '' && cstring.written === 'cond') {
+    target.written = 'cond';
+    target.cond    = cstring.cond;
+    target.value   = this.value;
+
+  } else {
+    target.written = this.written;
+    target.cond    = this.cond;
+    target.value   = this.value;
+  }
+};
+
+CString.prototype.fork = function () {
+  var cstring = new CString(this.value, false, undefined);
+  this.applyFork();
+  return cstring;
+};
+
+CString.prototype.applyFork = function () {
+  this.written = false;
+  this.cond    = false;
+  return this;
+};
+
+CString.prototype.replaceBy = function (cstring) {
+  this.written = cstring.written;
+  this.cond    = cstring.cond;
+  this.value   = cstring.value;
+};
+
+CString.prototype.isDefault = function () {
+  return (this.get() === '');
+};
+},{"./CloudType":12,"util":18}],12:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -4304,7 +4524,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],11:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -4327,6 +4547,10 @@ Indexes.prototype.forEach = function (callback) {
 
 Indexes.prototype.getType = function (position) {
   return this.types[position];
+};
+
+Indexes.prototype.getPositionOf = function (name) {
+  return this.names.indexOf(name);
 };
 
 Indexes.prototype.get = function (indexes) {
@@ -4369,7 +4593,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],12:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -4417,7 +4641,7 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":13}],13:[function(require,module,exports){
+},{"./Property":15}],15:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 function Property(name, ctypeName, cArray, values) {
@@ -4441,8 +4665,12 @@ Property.prototype.saveGet = function (indexes) {
 };
 
 Property.prototype.get = function (indexes) {
-  var index = this.indexes.get(indexes);
-  var ctype = this.values[index];
+  var index, ctype;
+  if (typeof indexes === 'undefined')
+    index = 'singleton';
+  else
+    index = this.indexes.get(indexes);
+  ctype = this.values[index];
   if (typeof ctype === 'undefined') {
     ctype = this.values[index] = new (CloudType.fromTag(this.ctypeName))();
   }
@@ -4457,7 +4685,7 @@ Property.prototype.entries = function () {
 //    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
 //    console.log("default: " + self.cArray.state.isDefault(self.get(index)));
     if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.get(index))) {
-      result.push(index);
+      result.push(self.cArray.get(index));
     }
   });
   return result;
@@ -4490,7 +4718,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":10}],14:[function(require,module,exports){
+},{"./CloudType":12}],16:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -4508,12 +4736,35 @@ function State(arrays, entities) {
 //  return op.apply(this.arrays[name].getProperty(propertyName).get(indexes), [].slice.call(arguments, 4))
 //};
 State.prototype.get = function (name) {
+  var array = this.arrays[name];
+  if (typeof array !== 'undefined' && array.isProxy) {
+    return array.getProperty('value').get();
+  }
   return this.arrays[name];
 };
 
-State.prototype.declare = function (array) {
-  array.state = this;
-  return this.arrays[array.name] = array;
+State.prototype.declare = function (name, array) {
+
+  // CArray or CEntity
+  if (array instanceof CArray) {
+    array.state = this;
+    array.name  = name;
+    return this.arrays[name] = array;
+
+
+  }
+  // global (CloudType) => create proxy CArray
+  if (typeof array.prototype !== 'undefined' && array.prototype instanceof CloudType) {
+    var CType = array;
+    array = CArray.declare([], {value: CType.name});
+    array.state = this;
+    array.name  = name;
+    array.isProxy = true;
+    return this.arrays[name] = array;
+  }
+  // Either declare CArray (CEntity is also a CArray) or CloudType, nothing else.
+  console.log(require('util').inspect(array));
+  throw "Need a CArray or CloudType to declare: " + array;
 };
 
 State.prototype.isDefault = function (cType) {
@@ -4523,25 +4774,28 @@ State.prototype.isDefault = function (cType) {
 /* Private */
 State.prototype.toJSON = function () {
   var self = this;
+  var arrays = {};
+  Object.keys(self.arrays).forEach(function (name) {
+    return arrays[name] = self.arrays[name].toJSON();
+  });
   return {
-    arrays: Object.keys(self.arrays).map(function (name) {
-      return self.arrays[name].toJSON();
-    })
+    arrays: arrays
   };
 };
 
 State.fromJSON = function (json) {
   var array, state;
   state = new this();
-  json.arrays.forEach(function (arrayJson) {
+  Object.keys(json.arrays).forEach(function (name) {
+    var arrayJson = json.arrays[name];
     if (arrayJson.type === 'Entity') {
       array = CEntity.fromJSON(arrayJson);
     } else if (arrayJson.type === 'Array') {
       array = CArray.fromJSON(arrayJson);
     } else {
-      throw "Unknown array in state: " + json.type;
+      throw "Unknown type in state: " + json.type;
     }
-    state.declare(array);
+    state.declare(name, array);
   });
   return state;
 };
@@ -4635,11 +4889,12 @@ State.prototype._join = function (rev, target) {
     });
   });
   rev.forEachEntity(function (entity) {
+    var jEntity = self.get(entity.name);
+    var tEntity = target.get(entity.name);
     entity.forEachState(function (index) {
-      var jEntity = self.get(entity.name);
-      var t = target.get(entity.name);
-      t.setMax(entity, jEntity, index);
+      tEntity.setMax(entity, jEntity, index);
     });
+
   });
   target.propagate();
 };
@@ -4647,6 +4902,7 @@ State.prototype._join = function (rev, target) {
 State.prototype.joinIn = function (rev) {
   return this._join(rev, rev);
 };
+
 State.prototype.join = function (rev) {
   return this._join(rev, this);
 };
@@ -4656,7 +4912,7 @@ State.prototype.fork = function () {
   var forker = this;
   forker.forEachArray(function (cArray) {
     var fArray = cArray.fork();
-    forked.declare(fArray);
+    forked.declare(cArray.name, fArray);
   });
   return forked;
 };
@@ -4688,8 +4944,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-
-},{"./CArray":6,"./CEntity":8,"./CloudType":10,"util":16}],15:[function(require,module,exports){
+},{"./CArray":6,"./CEntity":8,"./CloudType":12,"util":18}],17:[function(require,module,exports){
 
 
 //
@@ -4907,7 +5162,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5452,5 +5707,5 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":15}]},{},[4])
+},{"_shims":17}]},{},[4])
 ;

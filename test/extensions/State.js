@@ -80,9 +80,9 @@ State.prototype.isJoinOf = function (state1, state2) {
       var val1 = state1.get(entity.name).states[index];
       var val2 = state2.get(entity.name).states[index];
       if (val1 === DELETED || val2 === DELETED)
-        self.get(entity.name).states[index].should.equal(DELETED);
+        return self.get(entity.name).states[index].should.equal(DELETED);
       if (val1 === OK || val2 === OK)
-        self.get(entity.name).states[index].should.equal(OK);
+        return self.get(entity.name).states[index].should.equal(OK);
     });
   });
 };
@@ -98,7 +98,7 @@ State.prototype.isEqual = function (state) {
 
 State.prototype.isConsistent = function (state) {
   this.forPairs(state, function (type1, type2) {
-    console.log(require('util').inspect(type1.get()) + " consistent? " + require('util').inspect(type2.get()));
+//    console.log(require('util').inspect(type1.get()) + " consistent? " + require('util').inspect(type2.get()));
     type1.isConsistent(type2);
   });
   this.forEachEntity(function (entity) {

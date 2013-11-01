@@ -1,6 +1,7 @@
 var State     = require('./extensions/State');
 var CloudType = require('../shared/CloudType');
 var CArray    = require('../shared/CArray');
+var CEntity   = require('../shared/CEntity');
 var Property  = require('../shared/Property');
 var CInt      = require('./extensions/CInt');
 var should    = require('should');
@@ -46,8 +47,8 @@ describe('State', function () {
       states.forEach(function (result) {
         var json = result[0];
         var state = result[1];
-        json.arrays.forEach(function (cArrayJson) {
-          state.arrays.should.have.property(cArrayJson.name);
+        Object.keys(json.arrays).forEach(function (name) {
+          state.arrays.should.have.property(name);
         });
       });
     });
@@ -67,22 +68,88 @@ describe('State', function () {
     });
   });
 
-  describe('.declare(cArray)', function () {
+  describe('.declare(name, cArray) (declare CArray/CEntity)', function () {
     var state = new State();
-    state.declare(CArray.fromJSON(stubs.groceryChanged));
-    it('should add the array to the arrays map', function () {
-       state.arrays.should.have.property(stubs.groceryUnchanged.name);
+    var name = "Grocery";
+    state.declare(name, CArray.fromJSON(stubs.groceryChanged));
+    it('should add the array to the arrays map with given name', function () {
+       state.arrays.should.have.property(name);
     });
     it('should install reference of self in cArray', function () {
-      state.arrays[stubs.groceryUnchanged.name].state.should.equal(state);
+      state.arrays[name].state.should.equal(state);
+    });
+    it('should install reference of name in cArray', function () {
+      state.arrays[name].name.should.equal(name);
     });
   });
 
-  describe('.declare(CloudType)', function (){
+  describe('.declare(name, CloudType) (declare global CloudType)', function () {
     var state = new State();
-    state.declare(new CInt());
-    it('should create a proxy CArray (global)', function () {
+    var counter = state.get("counter");
+    state.declare("counter", CInt);
 
+    describe('proxy CArray', function () {
+      var proxyArray = state.arrays["counter"];
+      var property = proxyArray.getProperty('value');
+      it('should be created', function () {
+        should.exist(proxyArray);
+        proxyArray.should.be.an.instanceof(CArray);
+      });
+
+      it('should have a value property', function () {
+        should.exist(property);
+        property.should.be.an.instanceof(Property);
+      });
+
+      describe('value property .get()', function () {
+        var cType = property.get();
+        var cType2 = property.get();
+        it('should return CloudType', function () {
+          should.exist(cType);
+          cType.should.be.an.instanceof(CInt);
+        });
+        it('should always return the same CloudType', function () {
+          cType.should.equal(cType2);
+        });
+      });
+
+    });
+  });
+
+  describe('.get(cArrayName)', function () {
+    var state = new State();
+    var name = "Grocery";
+    var array1 = CArray.fromJSON(stubs.groceryChanged);
+    state.declare(name, array1);
+    var array2 = state.get(name);
+    it('should return the declared CArray', function () {
+      should.exist(array2);
+      array1.should.equal(array2);
+    });
+  });
+
+  describe('.get(cEntityName)', function () {
+    var state = new State();
+    var name = "Customer";
+    var array1 = CEntity.fromJSON(stubs.customerChanged);
+    state.declare(name, array1);
+    var array2 = state.get(name);
+    it('should return the declared CArray', function () {
+      should.exist(array2);
+      array1.should.equal(array2);
+    });
+  });
+
+  describe('.get(globalName)', function () {
+    var state = new State();
+    var name = "counter";
+    var cType = CInt;
+    state.declare(name, cType);
+    var cType2 = state.get(name);
+    it('should return the global CloudType which is not the same object as was given!', function () {
+      should.exist(cType2);
+      cType2.should.be.an.instanceof(CInt);
+      cType2.should.not.equal(cType);
     });
   });
 
@@ -107,7 +174,8 @@ describe('State', function () {
         property.should.be.an.instanceof(Property);
         ctr++
       });
-      stubs.stateUnchanged.arrays.forEach(function (array) {
+      Object.keys(stubs.stateUnchanged.arrays).forEach(function (name) {
+        var array = stubs.stateUnchanged.arrays[name];
         total += array.properties.length;
       });
       ctr.should.equal(total);
@@ -118,10 +186,7 @@ describe('State', function () {
     var state1 = State.fromJSON(stubs.stateUnchanged);
     var state2 = State.fromJSON(stubs.stateChanged);
     var jState = State.fromJSON(stubs.stateUnchanged);
-    state1.print();
-    state2.print();
     jState.join(state2);
-    jState.print();
     it('should join the given state into its own state (results in own state)', function () {
       jState.isJoinOf(state1, state2);
     });
@@ -130,8 +195,9 @@ describe('State', function () {
   describe('.joinIn(state)', function () {
     var state1 = State.fromJSON(stubs.stateUnchanged);
     var state2 = State.fromJSON(stubs.stateChanged);
-    var jState = State.fromJSON(stubs.stateUnchanged);
-    state2.joinIn(jState);
+    var jState = State.fromJSON(stubs.stateChanged);
+    state1.joinIn(jState);
+
     it('should join the given state into its own state (result in the other state)', function () {
       jState.isJoinOf(state1, state2);
     });

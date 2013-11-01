@@ -220,30 +220,20 @@ describe('CEntity state independent operations', function () {
 });
 
 describe('CEntity state dependent operations: ', function () {
-  var entity, state, Customer;
-  state  = State.fromJSON(stubs.stateChanged);
-  Order = state.get('Order');
-
-//  beforeEach(function () {
-//    var name = "Consumer";
-//    var indexNames = [{name: "String"}];
-//    var properties = {address: "CString"};
-//    entity = CEntity.declare(name, indexNames, properties);
-//    state1  = State.fromJSON(stubs.stateUnchanged);
-
-//    state.declare(entity);
-//  });
-
   describe('CEntity initialized in state', function () {
     it('should have a property state', function () {
+      var state  = State.fromJSON(stubs.stateChanged);
+      var Order = state.get('Order');
       should.exist(state);
       should.exist(Order);
       Order.should.have.property('state');
-      Order.state.should.eql(state);
+      Order.state.should.equal(state);
     })
   });
 
   describe('.where(callback)', function () {
+    var state  = State.fromJSON(stubs.stateChanged);
+    var Order = state.get('Order');
     var where = Order.where(function (entry) { return true; });
 
     it('should return an object with methods where and all', function () {

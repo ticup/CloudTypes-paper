@@ -73,18 +73,18 @@ State.prototype.yieldPull = function (state) {
 State.prototype.yield = function () {
   // (B) Revision from the server arrived, merge
   if (this.received) {
-//    console.log('yield: got revision from server');
+    console.log('yield: got revision from server');
     this.toJoin.joinIn(this);
     this.received = false;
     return this;
   }
   // (C) expecting a revision, but not present yet
   if (this.pending) {
-//    console.log('yield: waiting for server response');
+    console.log('yield: waiting for server response');
     return this;
   }
   // (A) Not expecting server response, send state to server
-//  console.log('yield: pushing to server');
+  console.log('yield: pushing to server');
   this.client.yieldPush(this);
   this.applyFork();
   this.pending  = true;
@@ -4880,20 +4880,21 @@ State.prototype._join = function (rev, target) {
   var self = this;
   master.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
-      var joiner = property.get(index);
+      var joiner = rev.getProperty(property).get(index);
       var joinee = self.getProperty(property).get(index);
       var t = target.getProperty(property).get(index);
 
-//      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
+      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
       joinee._join(joiner, t);
-//      console.log("joined: " + require('util').inspect(t));
+      console.log("joined: " + require('util').inspect(t));
     });
   });
   master.forEachEntity(function (entity) {
-    var jEntity = self.get(entity.name);
-    var tEntity = target.get(entity.name);
+    var joiner = rev.get(entity.name);
+    var joinee = self.get(entity.name);
+    var t = target.get(entity.name);
     entity.forEachState(function (index) {
-      tEntity.setMax(entity, jEntity, index);
+      t.setMax(joinee, joiner, index);
     });
 
   });

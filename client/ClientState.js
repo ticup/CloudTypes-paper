@@ -26,18 +26,18 @@ State.prototype.yieldPull = function (state) {
 State.prototype.yield = function () {
   // (B) Revision from the server arrived, merge
   if (this.received) {
-//    console.log('yield: got revision from server');
+    console.log('yield: got revision from server');
     this.toJoin.joinIn(this);
     this.received = false;
     return this;
   }
   // (C) expecting a revision, but not present yet
   if (this.pending) {
-//    console.log('yield: waiting for server response');
+    console.log('yield: waiting for server response');
     return this;
   }
   // (A) Not expecting server response, send state to server
-//  console.log('yield: pushing to server');
+  console.log('yield: pushing to server');
   this.client.yieldPush(this);
   this.applyFork();
   this.pending  = true;

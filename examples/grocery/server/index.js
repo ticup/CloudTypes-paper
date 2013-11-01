@@ -1,6 +1,6 @@
 var grocery = require('./grocery');
 
-var file = new (require('node-static').Server)();
+var file = new (require('node-static').Server)(__dirname + '/../../../');
 var port = process.env.PORT || 8080;
 
 /* setup static file server */

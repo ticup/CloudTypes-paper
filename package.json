@@ -1,6 +1,6 @@
 {
-  "name": "CloudType.js",
-  "description": "A JavaScript library implementation of the CloudTypes concept",
+  "name": "cloudtypes",
+  "description": "A JavaScript library implementation of the CloudTypes eventual consistency model",
   "author": "Tim Coppieters <coppieters.tim@gmail.com>",
   "version": "0.0.1",
   "engine": "node >= 0.4.1",

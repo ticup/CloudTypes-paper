@@ -324,9 +324,9 @@ This is the most important and interesting test suite of all. It performs integr
 
 
 
-
-
-    
+License
+-------
+[GPL v2 licensed](http://choosealicense.com/licenses/gpl-v2/).
 
 
 

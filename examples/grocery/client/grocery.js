@@ -8,7 +8,7 @@ var State;
 
 CloudTypes.createClient()
           .connect(window.location.hostname, function (state) {
-
+  State = state; // debug
   var app = new Application(state);
 
   // start yielding
@@ -110,12 +110,13 @@ GroceryView.prototype.update = function () {
     var view = views[name];
 
     // view already present: update + delete from old views
-    if (view) {
+    if (typeof view !== 'undefined') {
       view.update();
       delete views[name];
 
       // view not present: create, update and insert html in DOM
     } else {
+      console.log("creating new view")
       view = new GroceryEntryView(grocery, app);
       view.update();
       insertAt(ul, ctr, view.html());
@@ -151,7 +152,7 @@ function GroceryEntryView(grocery, app) {
   this.nameView = $("<span>");
   this.toBuyView = $("<span class=badge>");
   this.li = $("<li class='list-group-item grocery-item'></li>")
-      .append(this.nameView)
+      .html(this.nameView)
       .append(this.toBuyView)
       .click(function () { entryView.showBought(); });
 }
@@ -197,7 +198,7 @@ GroceryEntryView.prototype.showBought = function () {
   // on submit of bought form
   $('#boughtgrocerysubmit').click(function (event) {
     event.preventDefault();
-    
+
     // scrape values
     var name = entryView.grocery.key('name');
     var toBuy = parseInt($('#boughtcount').val(), 10);

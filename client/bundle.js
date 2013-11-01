@@ -74,7 +74,11 @@ State.prototype.yield = function () {
   // (B) Revision from the server arrived, merge
   if (this.received) {
 //    console.log('yield: got revision from server');
+    console.log("joining");
+    console.log(this.toJoin);
     this.toJoin.joinIn(this);
+    console.log("joined");
+    console.log(this);
     this.received = false;
     return this;
   }
@@ -4876,8 +4880,9 @@ State.prototype.deleted = function (index, entity) {
 
 
 State.prototype._join = function (rev, target) {
+  var master = (this === target) ? rev : this;
   var self = this;
-  rev.forEachProperty(function (property) {
+  master.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
       var joiner = property.get(index);
       var joinee = self.getProperty(property).get(index);
@@ -4888,7 +4893,7 @@ State.prototype._join = function (rev, target) {
 //      console.log("joined: " + require('util').inspect(t));
     });
   });
-  rev.forEachEntity(function (entity) {
+  master.forEachEntity(function (entity) {
     var jEntity = self.get(entity.name);
     var tEntity = target.get(entity.name);
     entity.forEachState(function (index) {

@@ -27,11 +27,7 @@ State.prototype.yield = function () {
   // (B) Revision from the server arrived, merge
   if (this.received) {
 //    console.log('yield: got revision from server');
-    console.log("joining");
-    console.log(this.toJoin);
     this.toJoin.joinIn(this);
-    console.log("joined");
-    console.log(this);
     this.received = false;
     return this;
   }

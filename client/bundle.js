@@ -164,7 +164,7 @@ CClient.prototype.reconnect = function () {
   this.client.reconnect();
 };
 },{"./Client":1,"./ClientState":2}],4:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypesClient = require ('./CloudTypeClient');
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require ('./CloudTypeClient');
 
 var CloudTypes = {
   CInt    : require('../shared/CInt'),
@@ -179,7 +179,7 @@ var CloudTypes = {
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":6,"../shared/CEntity":8,"../shared/CInt":10,"../shared/CString":11,"./CloudTypesClient":3}],5:[function(require,module,exports){
+},{"../shared/CArray":6,"../shared/CEntity":8,"../shared/CInt":10,"../shared/CString":11,"./CloudTypeClient":3}],5:[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -4311,6 +4311,13 @@ function CEntityEntry(cEntity, indexes) {
 
 CEntityEntry.prototype.get = function (property) {
   return this.cEntity.getProperty(property).saveGet(this.indexes);
+};
+
+CEntityEntry.prototype.key = function (name) {
+  var position = this.cEntity.indexes.getPositionOf(name);
+  if (position === -1)
+    return null;
+  return this.indexes[position];
 };
 
 CEntityEntry.prototype.forEachIndex = function (callback) {

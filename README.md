@@ -324,6 +324,31 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
         });
 
 
+Examples
+--------
+The Grocery list example is currently live on heroku and can be found [here](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html).
+See the examples folder (e.g. [the grocery example](https://github.com/ticup/CloudTypes/blob/master/examples/grocery/server/index.js)) on how to get everything working.
+
+You can run the examples on your own computer if you have the optional dependencies installed (static file server):
+
+
+    npm install --optional
+
+Then start the example be either running:
+
+    node node_modules/cloudtypes/examples/grocery/server/index.js
+
+If you have it installed as a library or:
+
+    node examples/grocery/server/index.js
+
+If you have cloned to repository.
+
+Visit the example as follows:
+
+    http://localhost:8080/examples/grocery/client/index.html
+
+
 Library Goal
 -------------
 This library will be kept as close to the specifications of the paper as a JavaScript library implementation allows. When it is finished, some non-trivial applications are going to be added that explore the boundaries of the CloudTypes concept in the JavaScript environment. Afterwards forks are going to be made to explore extensions that could possibly alleviate the integration of CloudTypes in the JavaScript web development environment and to explore performance optimisations.

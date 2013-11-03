@@ -15,7 +15,7 @@ var CloudTypeServer = require('../server/main.js');
 var stubs = require('./stubs');
 
 var CloudTypes = require('../client/main.js');
-var CloudTypesClient = require('../client/CloudTypeClient.js');
+var CloudTypeClient = require('../client/CloudTypeClient.js');
 
 var host = 'http://localhost';
 var port = 8090;
@@ -58,13 +58,13 @@ describe('Integration #', function () {
     describe('.createClient()', function () {
       var client = CloudTypes.createClient();
 
-      it('should create a CloudTypesClient object', function () {
+      it('should create a CloudTypeClient object', function () {
         should.exist(client);
         client.should.be.an.instanceOf(CloudTypeClient);
       });
     });
 
-    describe('CloudTypesClient', function () {
+    describe('CloudTypeClient', function () {
 
       describe('.connect(host:port, callback)', function () {
         var client = CloudTypes.createClient();

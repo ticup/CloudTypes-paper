@@ -1,4 +1,4 @@
-var CServer = require ('./CloudTypeServer');
+var CloudTypeServer = require ('./CloudTypeServer');
 
 
 exports.createServer = function (state) {

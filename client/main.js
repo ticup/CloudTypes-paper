@@ -1,4 +1,4 @@
-var CloudTypesClient = require ('./CloudTypeClient');
+var CloudTypeClient = require ('./CloudTypeClient');
 
 var CloudTypes = {
   CInt    : require('../shared/CInt'),

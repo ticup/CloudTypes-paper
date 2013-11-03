@@ -7,12 +7,24 @@ function Server(state) {
   this.state = state;
 }
 
-Server.prototype.open = function (target) {
+// target: port or http server (default = port 8090)
+// staticPath: if given, will serve static files from given path
+Server.prototype.open = function (target, staticPath) {
   var self = this;
   var cid  = 0;
-  // target: port or http server
-  // default = port 8090
+
   target = target || 8090;
+
+  // setup static file serving
+  if (typeof staticPath === 'string') {
+    var file = new (require('node-static').Server)(staticPath);
+    console.log('starting static file server from ' + staticPath);
+    target = require('http').createServer(function (req, res) {
+      req.addListener('end', function () {
+        file.serve(req, res);
+      }).resume();
+    }).listen(target);
+  }
 
   // open websockets
   var io = IO.listen(target);

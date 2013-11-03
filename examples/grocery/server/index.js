@@ -3,18 +3,10 @@
  */
 var grocery = require('./grocery');
 
-var file = new (require('node-static').Server)(__dirname + '/../../../');
 var port = process.env.PORT || 8080;
 
-/* setup static file server */
-var http = require('http').createServer(function (req, res) {
-  req.addListener('end', function () {
-    file.serve(req, res);
-  }).resume();
-}).listen(port);
-
 /* publish grocery cloudtypes through the http server */
-grocery.publish(http);
+grocery.publish(port, __dirname + '/../../../');
 
 // setup xhr-polling only for Heroku
 if (process.env.HEROKU) {

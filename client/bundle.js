@@ -164,7 +164,7 @@ CClient.prototype.reconnect = function () {
   this.client.reconnect();
 };
 },{"./Client":1,"./ClientState":2}],4:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypesClient = require ('./CloudTypesClient');
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypesClient = require ('./CloudTypeClient');
 
 var CloudTypes = {
   CInt    : require('../shared/CInt'),
@@ -173,7 +173,7 @@ var CloudTypes = {
   CEntity : require('../shared/CEntity'),
 
   createClient: function () {
-    return new CloudTypesClient();
+    return new CloudTypeClient();
   }
 };
 

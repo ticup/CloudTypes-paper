@@ -1,4 +1,4 @@
-var CloudTypesClient = require ('./CloudTypesClient');
+var CloudTypesClient = require ('./CloudTypeClient');
 
 var CloudTypes = {
   CInt    : require('../shared/CInt'),
@@ -7,7 +7,7 @@ var CloudTypes = {
   CEntity : require('../shared/CEntity'),
 
   createClient: function () {
-    return new CloudTypesClient();
+    return new CloudTypeClient();
   }
 };
 

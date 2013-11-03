@@ -1,8 +1,8 @@
-var CServer = require ('./CServer');
+var CServer = require ('./CloudTypeServer');
 
 
 exports.createServer = function (state) {
-  return new CServer(state);
+  return new CloudTypeServer(state);
 };
 
 exports.CInt    = require('../shared/CInt');

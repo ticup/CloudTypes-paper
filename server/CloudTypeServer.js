@@ -8,8 +8,8 @@ function CServer(state) {
   this.server = new Server(this.state);
 }
 
-CServer.prototype.publish = function (target) {
-  this.server.open(target);
+CServer.prototype.publish = function (target, static) {
+  this.server.open(target, static);
   this.state.published(this.server);
   return this;
 };

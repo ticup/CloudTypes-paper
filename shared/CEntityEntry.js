@@ -13,6 +13,13 @@ CEntityEntry.prototype.get = function (property) {
   return this.cEntity.getProperty(property).saveGet(this.indexes);
 };
 
+CEntityEntry.prototype.key = function (name) {
+  var position = this.cEntity.indexes.getPositionOf(name);
+  if (position === -1)
+    return null;
+  return this.indexes[position];
+};
+
 CEntityEntry.prototype.forEachIndex = function (callback) {
   var self = this;
   var i = 0;

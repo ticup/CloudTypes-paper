@@ -36,7 +36,7 @@ CloudTypes aims at abstracting the implementation details (servers, networks, ca
 
 This Library
 -------------
-This library implements the proposed model using javascript and Websockets. It does so as **explicit as possible**, **neglecting** most of the **performance** concerns. It serves both as an **experimental implementation** and a **didactic tool** to better understand the model. An interesting place to look at to learn or experiment with the model are the [integration tests](https://github.com/ticup/CloudTypes/tests/integration.js), where client and server are put together and different scenarios can be easily tested.
+This library implements the proposed model using javascript and Websockets. It does so as **explicit as possible**, **neglecting** most of the **performance** concerns. It serves both as an **experimental implementation** and a **didactic tool** to better understand the model. An interesting place to look at to learn or experiment with the model are the [integration tests](https://github.com/ticup/CloudTypes/blob/master/test/integration.js), where client and server are put together and different scenarios can be easily tested.
 
 Since this is just a library implementation, in contrary to the language level implementation described in the paper, it inherently differs in some ways:
 

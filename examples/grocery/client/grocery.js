@@ -126,8 +126,8 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
     // set up bought form + set li to selected
     this.html.addClass('selected');
     this.bought = $("#boughtgroceryform")
+        .removeClass('hide')
         .data('entry', this.entry.key('name'))
-        .show()
         .appendTo(this.html);
 
     // reset input
@@ -138,7 +138,7 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
       event.preventDefault();
 
       // scrape values
-      var name = $(this).data('name');
+      var name = $(this).data('entry');
       var toBuy = parseInt($('#boughtcount').val(), 10);
 
       // actual bought operation + update view
@@ -151,7 +151,7 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
     var form = this.html.find('form');
     if (form.length > 0) {
       this.html.removeClass('selected');
-      form.remove();
+      form.addClass('hide');
     }
   }
 });

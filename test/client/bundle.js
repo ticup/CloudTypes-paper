@@ -1,67 +1,4 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
-var ClientState = require('./ClientState');
-var io          = require('socket.io-client');
-
-global.io = io;
-
-module.exports = Client;
-
-function Client() {
-  this.initialized = false;
-}
-
-Client.prototype.connect = function (host, options, callback) {
-  var self = this;
-  if (typeof callback === 'undefined') {
-    callback = options;
-    options  = {};
-  }
-  options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
-  this.host = host;
-  this.options = options;
-  this.callback = callback;
-
-  this.socket = io.connect(host, options);
-  this.socket.on('init', function (json) {
-    var state = State.fromJSON(json.state);
-
-    console.log("got initialized");
-    if (self.initialized) {
-      return self.state.reinit(json.cid, self, state);
-    }
-
-    self.initialized = true;
-    self.state = state;
-    self.state.init(json.cid, self);
-    callback(self.state);
-  });
-};
-
-Client.prototype.reconnect = function () {
-  return this.connect(this.host, this.options, this.callback);
-};
-
-Client.prototype.disconnect = function () {
-  return this.socket.disconnect();
-};
-
-Client.prototype.yieldPush = function (pushState) {
-  var state = this.state;
-  this.socket.emit('YieldPush', pushState, function (stateJson) {
-    var pullState = State.fromJSON(stateJson);
-    state.yieldPull(pullState);
-  });
-};
-
-Client.prototype.flushPush = function (pushState, flushPull) {
-  var state = this.state;
-  this.socket.emit('FlushPush', pushState, function (stateJson) {
-    var pullState = State.fromJSON(stateJson);
-    flushPull(pullState);
-  });
-};
-},{"../shared/State":18,"./ClientState":2,"socket.io-client":7}],2:[function(require,module,exports){
 var State = require('../shared/State');
 
 module.exports = State;
@@ -138,49 +75,276 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":18}],3:[function(require,module,exports){
-var Client = require('./Client');
-var ClientState  = require('./ClientState');
+},{"../shared/State":20}],2:[function(require,module,exports){
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
+var io          = require('socket.io-client');
 
-module.exports = CClient;
+global.io = io;
 
-function CClient() {
-  this.client = new Client(this.state);
+module.exports = Client;
+
+function Client() {
+  this.initialized = false;
 }
 
-CClient.prototype.connect = function (host, options, callback) {
-  return this.client.connect(host, options, callback);
+Client.prototype.connect = function (host, options, callback) {
+  var self = this;
+  if (typeof callback === 'undefined') {
+    callback = options;
+    options  = {};
+  }
+  options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
+  options['max reconnection attempts'] = options['max reconnection attempts'] ? options ['max reconnection attempts'] : Infinity;
+  this.host = host;
+  this.options = options;
+  this.callback = callback;
+
+  this.socket = io.connect(host, options);
+  this.socket.on('init', function (json) {
+    var state = State.fromJSON(json.state);
+
+    if (self.initialized) {
+      return self.state.reinit(json.cid, self, state);
+    }
+
+    self.initialized = true;
+    self.state = state;
+    self.state.init(json.cid, self);
+    callback(self.state);
+  });
 };
 
-CClient.prototype.close = function () {
-  this.client.disconnect();
+Client.prototype.reconnect = function () {
+  return this.connect(this.host, this.options, this.callback);
 };
 
-CClient.prototype.disconnect = function () {
-  this.client.disconnect();
+Client.prototype.disconnect = function () {
+  return this.socket.disconnect();
 };
 
-CClient.prototype.reconnect = function () {
-  this.client.reconnect();
+Client.prototype.close = function () {
+  return this.disconnect();
 };
-},{"./Client":1,"./ClientState":2}],4:[function(require,module,exports){
+
+Client.prototype.yieldPush = function (pushState) {
+  var state = this.state;
+  this.socket.emit('YieldPush', pushState, function (stateJson) {
+    var pullState = State.fromJSON(stateJson);
+    state.yieldPull(pullState);
+  });
+};
+
+Client.prototype.flushPush = function (pushState, flushPull) {
+  var state = this.state;
+  this.socket.emit('FlushPush', pushState, function (stateJson) {
+    var pullState = State.fromJSON(stateJson);
+    flushPull(pullState);
+  });
+};
+},{"../shared/State":20,"socket.io-client":9}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
-//var ListView        = require('./views/ListView');
+var ClientState     = require('./ClientState');
+
+var CInt            = require('../shared/CInt');
+var CString         = require('../shared/CString');
+var CArray          = require('../shared/CArray');
+var CEntity         = require('../shared/CEntity');
+
+var View            = require('./views/View');
+var ListView        = require('./views/ListView');
+var EntryView       = require('./views/EntryView');
 
 var CloudTypes = {
   // Client
   createClient: function () {
     return new CloudTypeClient();
-  }
+  },
 
-//  // Views
-//  ListView: ListView
+  // Views
+  View: View,
+  ListView: ListView,
+  EntryView: EntryView
 
 };
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"./CloudTypeClient":3}],5:[function(require,module,exports){
+},{"../shared/CArray":10,"../shared/CEntity":12,"../shared/CInt":14,"../shared/CString":15,"./ClientState":1,"./CloudTypeClient":2,"./views/EntryView":4,"./views/ListView":5,"./views/View":6}],4:[function(require,module,exports){
+/**
+ * Created by ticup on 04/11/13.
+ */
+var View = require('./View');
+
+// EntryView
+/////////////
+var EntryView = View.extend({
+  initialize: function () {
+    EntryView.__super__.initialize.call(this);
+    defaults(this);
+    var html = this.html;
+    this.entry.forEachKey(function (name, value) {
+      html.find('.key-'+name).html(value);
+    });
+  },
+
+  update: function () {
+    var self = this;
+    this.entry.forEachProperty(function (name, value) {
+      self.html.find('.property-'+name).html(value.get());
+    });
+  }
+});
+
+function defaults(entryView) {
+//  if (typeof entryView.entry === 'undefined')
+//    throw new Error("EntryView requires an Entry property");
+  if (typeof entryView.html === 'undefined') {
+    var entry = entryView.entry;
+    var html  = entryView.html = $("<li class='list-group-item' data-index='" + entry.index() + "'></li>");
+    entry.forEachKey(function (name, value) {
+      html.append("<div class='key-" + name + "'>" + value + "</div>");
+    });
+    entry.forEachProperty(function (name) {
+      html.append("<div class='property-" + name + "'></div>");
+    });
+  }
+}
+
+module.exports = EntryView;
+},{"./View":6}],5:[function(require,module,exports){
+/**
+ * Created by ticup on 04/11/13.
+ */
+var View = require('./View');
+
+// ListView
+////////////
+var ListView = View.extend({
+  initialize: function () {
+    ListView.__super__.initialize.call(this);
+    this.views = {};
+  },
+
+  update: function () {
+    var self  = this;
+    var views = this.views;
+    var app   = this.app;
+    var ctr = 0;
+    var newViews = {};
+
+    // create new views or update existing ones
+    this.produce().forEach(function (item) {
+      var id = item.index();
+      var view = views[id];
+
+      // view already present: update + delete from old views
+      if (typeof view !== 'undefined') {
+        view.update();
+        delete views[id];
+
+        // view not present: create, update and insert html in DOM
+      } else {
+        view = self.createItemView(item);
+        view.update();
+        insertAt(self.html, ctr, view.html);
+      }
+
+      newViews[id] = view;
+    });
+
+    // remove old views that have no model anymore
+    Object.keys(views).forEach(function (id) {
+      views[id].html.remove();
+      delete views[id];
+    });
+
+    // set the new views
+    this.views = newViews;
+  },
+
+  createItemView: function (item) {
+    throw Error("ListView.createItemView(item): should be implemented by extending object");
+  }
+});
+
+// Utility
+///////////
+
+function insertAt(parent, index, html) {
+  console.log('inserting at ' + index + ' ' + html);
+  console.log(html);
+  if (index === 0)
+    return parent.prepend(html);
+  parent.find(':nth-child(' + index + ')').after(html);
+}
+
+module.exports = ListView;
+},{"./View":6}],6:[function(require,module,exports){
+/**
+ * Created by ticup on 04/11/13.
+ */
+
+function View(attrs) {
+  var view = this;
+  if (typeof attrs !== 'undefined') {
+    Object.keys(attrs).forEach(function (attr) {
+      view[attr] = attrs[attr];
+    });
+  }
+  if (typeof this.initialize === 'function')
+    this.initialize();
+}
+
+View.extend = function (protoProps, staticProps) {
+  var parent = this;
+  var child;
+
+  // The constructor function for the new subclass is either defined by you
+  // (the "constructor" property in your `extend` definition), or defaulted
+  // by us to simply call the parent's constructor.
+  if (protoProps && (Object.hasOwnProperty(protoProps, 'constructor'))) {
+    child = protoProps.constructor;
+  } else {
+    child = function (){ return parent.apply(this, arguments); };
+  }
+
+
+  // Add constructor properties of parent to the child constructor function
+  Object.keys(parent).forEach(function (prop) {
+    child[prop] = parent[prop];
+  });
+
+  // Add supplied constructor properties to the constructor function.
+  if (staticProps)
+    Object.keys(staticProps).forEach(function (prop) {
+      child[prop] = staticProps[prop];
+    });
+
+  // Set prototype chain to inherit from parent
+  child.prototype = Object.create(parent.prototype);
+
+  // Add supplied prototype properties (instance properties) to the child's prototype
+  if (protoProps) {
+    Object.keys(protoProps).forEach(function (prop) {
+      child.prototype[prop] = protoProps[prop];
+    });
+  }
+
+  // Set a convenience property in case the parent's prototype is needed
+  // later.
+  child.__super__ = parent.prototype;
+
+  child.__parent__ = parent;
+
+  return child;
+};
+
+View.prototype.initialize = function () {
+  this.html = $(this.html);
+};
+
+module.exports = View;
+},{}],7:[function(require,module,exports){
 var Buffer=require("__browserify_Buffer").Buffer;
 // Taken from node's assert module, because it sucks
 // and exposes next to nothing useful.
@@ -275,7 +439,7 @@ function objEquiv (a, b) {
   return true;
 }
 
-},{"__browserify_Buffer":56}],6:[function(require,module,exports){
+},{"__browserify_Buffer":58}],8:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2012 TJ Holowaychuk <tj@vision-media.ca>
@@ -1007,7 +1171,7 @@ Assertion.prototype = {
 ('below', 'lessThan');
 
 
-},{"./eql":5,"assert":29,"http":38,"util":34}],7:[function(require,module,exports){
+},{"./eql":7,"assert":31,"http":40,"util":36}],9:[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -4881,7 +5045,7 @@ if (typeof define === "function" && define.amd) {
   define([], function () { return io; });
 }
 })();
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var CloudType   = require('./CloudType');
 var Indexes     = require('./Indexes');
 var Property    = require('./Property');
@@ -4956,7 +5120,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":9,"./CloudType":14,"./Indexes":15,"./Properties":16,"./Property":17,"util":34}],9:[function(require,module,exports){
+},{"./CArrayEntry":11,"./CloudType":16,"./Indexes":17,"./Properties":18,"./Property":19,"util":36}],11:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -4978,15 +5142,13 @@ CArrayEntry.prototype.forEachProperty = function (callback) {
 };
 
 CArrayEntry.prototype.forEachIndex = function (callback) {
-  var self = this;
-  this.indexes.forEach(function (name) {
-    var value = self.key(name);
-    callback(name, value);
-  });
+  return this.indexes.forEach(callback);
 };
 
 CArrayEntry.prototype.forEachKey = function (callback) {
-  return this.forEachIndex(callback);
+  for (var i = 0; i<this.indexes.length; i++) {
+    callback(this.cArray.indexes.getName(i), this.indexes[i]);
+  }
 };
 
 CArrayEntry.prototype.key = function (name) {
@@ -5009,14 +5171,10 @@ CArrayEntry.prototype.deleted = function () {
   return (this.cArray.state.deleted(this.indexes, this.cArray));
 };
 
-CArrayEntry.prototype.flatIndex = function () {
-  return Indexes.getIndex(this.indexes);
+CArrayEntry.prototype.index = function () {
+  return Indexes.createIndex(this.indexes);
 };
-
-CArrayEntry.prototype.toString = function () {
-  return Indexes.getIndex(this.indexes);
-};
-},{"./Indexes":15}],10:[function(require,module,exports){
+},{"./Indexes":17}],12:[function(require,module,exports){
 var CArray     = require('./CArray');
 var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
@@ -5156,7 +5314,7 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":8,"./CEntityEntry":11,"./Indexes":15,"./Properties":16,"./Property":17}],11:[function(require,module,exports){
+},{"./CArray":10,"./CEntityEntry":13,"./Indexes":17,"./Properties":18,"./Property":19}],13:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CEntityEntry;
@@ -5195,7 +5353,7 @@ CEntityEntry.prototype.deleted = function () {
 CEntityEntry.prototype.delete = function () {
   return this.cEntity.delete(this);
 };
-},{"./Indexes":15}],12:[function(require,module,exports){
+},{"./Indexes":17}],14:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CInt;
@@ -5281,7 +5439,7 @@ CInt.prototype.replaceBy = function (cint) {
 CInt.prototype.isDefault = function () {
   return (this.get() === 0);
 };
-},{"./CloudType":14,"util":34}],13:[function(require,module,exports){
+},{"./CloudType":16,"util":36}],15:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CString;
@@ -5393,7 +5551,7 @@ CString.prototype.replaceBy = function (cstring) {
 CString.prototype.isDefault = function () {
   return (this.get() === '');
 };
-},{"./CloudType":14,"util":34}],14:[function(require,module,exports){
+},{"./CloudType":16,"util":36}],16:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -5426,7 +5584,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -5451,6 +5609,9 @@ Indexes.prototype.getType = function (position) {
   return this.types[position];
 };
 
+Indexes.prototype.getName = function (position) {
+  return this.names[position];
+};
 
 Indexes.prototype.getTypeOf = function (name) {
   var position = this.getPositionOf(name);
@@ -5513,7 +5674,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -5561,7 +5722,7 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":17}],17:[function(require,module,exports){
+},{"./Property":19}],19:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 function Property(name, ctypeName, cArray, values) {
@@ -5638,7 +5799,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":14}],18:[function(require,module,exports){
+},{"./CloudType":16}],20:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5670,7 +5831,6 @@ State.prototype.declare = function (name, array) {
     array.state = this;
     array.name  = name;
     return this.arrays[name] = array;
-
 
   }
   // global (CloudType) => create proxy CArray
@@ -5769,9 +5929,9 @@ State.prototype.deleted = function (index, entity) {
     if (entity.deleted(index))
       return true;
     var del = false;
-    entry.forEachIndex(function (idx, value) {
-      if (typeof value !== 'int' && typeof value !== 'string') {
-        if (value.deleted())
+    entry.forEachIndex(function (index) {
+      if (typeof index !== 'int' && typeof index !== 'string') {
+        if (index.deleted())
           del = true;
       }
     });
@@ -5867,7 +6027,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":8,"./CEntity":10,"./CloudType":14,"util":34}],19:[function(require,module,exports){
+},{"./CArray":10,"./CEntity":12,"./CloudType":16,"util":36}],21:[function(require,module,exports){
 
 // load normal client file
 var main = require('../../client/main');
@@ -5876,7 +6036,7 @@ var main = require('../../client/main');
 exports.CInt     = require('../extensions/CInt');
 exports.CString  = require('../extensions/CString');
 exports.State    = require('../extensions/State');
-},{"../../client/main":4,"../extensions/CInt":20,"../extensions/CString":21,"../extensions/State":22}],20:[function(require,module,exports){
+},{"../../client/main":3,"../extensions/CInt":22,"../extensions/CString":23,"../extensions/State":24}],22:[function(require,module,exports){
 // test/extensions/CInt.js
 //
 // Extends the CInt CloudType with the necessary test
@@ -5915,7 +6075,7 @@ CInt.prototype.isEqual = function (cint) {
 CInt.prototype.isConsistent = function (cint) {
   this.get().should.equal(cint.get());
 };
-},{"../../shared/CInt":12,"should":6}],21:[function(require,module,exports){
+},{"../../shared/CInt":14,"should":8}],23:[function(require,module,exports){
 // test/extensions/CString.js
 //
 // Extends the CString CloudType with the necessary test
@@ -5973,7 +6133,7 @@ CString.prototype.isConsistent = function (cstring) {
 //  console.log(this.get() + " =? " + cint.get());
   this.get().should.equal(cstring.get());
 };
-},{"../../shared/CString":13,"should":6,"util":34}],22:[function(require,module,exports){
+},{"../../shared/CString":15,"should":8,"util":36}],24:[function(require,module,exports){
 var State = require('../../shared/State');
 var should = require('should');
 
@@ -6086,7 +6246,7 @@ State.prototype.isConsistent = function (state) {
     });
   });
 };
-},{"../../shared/State":18,"should":6}],23:[function(require,module,exports){
+},{"../../shared/State":20,"should":8}],25:[function(require,module,exports){
 
 
 //
@@ -6304,7 +6464,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6377,7 +6537,7 @@ function onend() {
   timers.setImmediate(shims.bind(this.end, this));
 }
 
-},{"_shims":23,"_stream_readable":26,"_stream_writable":28,"timers":33,"util":34}],25:[function(require,module,exports){
+},{"_shims":25,"_stream_readable":28,"_stream_writable":30,"timers":35,"util":36}],27:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6420,7 +6580,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"_stream_transform":27,"util":34}],26:[function(require,module,exports){
+},{"_stream_transform":29,"util":36}],28:[function(require,module,exports){
 var process=require("__browserify_process");// Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7341,7 +7501,7 @@ function endReadable(stream) {
   }
 }
 
-},{"__browserify_process":57,"_shims":23,"buffer":36,"events":30,"stream":31,"string_decoder":32,"timers":33,"util":34}],27:[function(require,module,exports){
+},{"__browserify_process":59,"_shims":25,"buffer":38,"events":32,"stream":33,"string_decoder":34,"timers":35,"util":36}],29:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7547,7 +7707,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"_stream_duplex":24,"util":34}],28:[function(require,module,exports){
+},{"_stream_duplex":26,"util":36}],30:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7917,7 +8077,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"buffer":36,"stream":31,"timers":33,"util":34}],29:[function(require,module,exports){
+},{"buffer":38,"stream":33,"timers":35,"util":36}],31:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8234,7 +8394,7 @@ assert.doesNotThrow = function(block, /*optional*/message) {
 };
 
 assert.ifError = function(err) { if (err) {throw err;}};
-},{"_shims":23,"util":34}],30:[function(require,module,exports){
+},{"_shims":25,"util":36}],32:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8515,7 +8675,7 @@ EventEmitter.listenerCount = function(emitter, type) {
     ret = emitter._events[type].length;
   return ret;
 };
-},{"util":34}],31:[function(require,module,exports){
+},{"util":36}],33:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8644,7 +8804,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"_stream_duplex":24,"_stream_passthrough":25,"_stream_readable":26,"_stream_transform":27,"_stream_writable":28,"events":30,"util":34}],32:[function(require,module,exports){
+},{"_stream_duplex":26,"_stream_passthrough":27,"_stream_readable":28,"_stream_transform":29,"_stream_writable":30,"events":32,"util":36}],34:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8837,7 +8997,7 @@ function base64DetectIncompleteChar(buffer) {
   return incomplete;
 }
 
-},{"buffer":36}],33:[function(require,module,exports){
+},{"buffer":38}],35:[function(require,module,exports){
 try {
     // Old IE browsers that do not curry arguments
     if (!setTimeout.call) {
@@ -8956,7 +9116,7 @@ if (!exports.setImmediate) {
   };
 }
 
-},{}],34:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9501,7 +9661,7 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":23}],35:[function(require,module,exports){
+},{"_shims":25}],37:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -9587,7 +9747,7 @@ exports.writeIEEE754 = function(buffer, value, offset, isBE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],36:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 var assert;
 exports.Buffer = Buffer;
 exports.SlowBuffer = Buffer;
@@ -10713,7 +10873,7 @@ Buffer.prototype.writeDoubleBE = function(value, offset, noAssert) {
   writeDouble(this, value, offset, true, noAssert);
 };
 
-},{"./buffer_ieee754":35,"assert":29,"base64-js":37}],37:[function(require,module,exports){
+},{"./buffer_ieee754":37,"assert":31,"base64-js":39}],39:[function(require,module,exports){
 (function (exports) {
 	'use strict';
 
@@ -10799,7 +10959,7 @@ Buffer.prototype.writeDoubleBE = function(value, offset, noAssert) {
 	module.exports.fromByteArray = uint8ToBase64;
 }());
 
-},{}],38:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 var http = module.exports;
 var EventEmitter = require('events').EventEmitter;
 var Request = require('./lib/request');
@@ -10861,7 +11021,7 @@ var xhrHttp = (function () {
     }
 })();
 
-},{"./lib/request":39,"events":30}],39:[function(require,module,exports){
+},{"./lib/request":41,"events":32}],41:[function(require,module,exports){
 var Stream = require('stream');
 var Response = require('./response');
 var concatStream = require('concat-stream');
@@ -10995,7 +11155,7 @@ var indexOf = function (xs, x) {
     return -1;
 };
 
-},{"./response":40,"Base64":41,"concat-stream":42,"stream":31,"util":34}],40:[function(require,module,exports){
+},{"./response":42,"Base64":43,"concat-stream":44,"stream":33,"util":36}],42:[function(require,module,exports){
 var Stream = require('stream');
 var util = require('util');
 
@@ -11117,7 +11277,7 @@ var isArray = Array.isArray || function (xs) {
     return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{"stream":31,"util":34}],41:[function(require,module,exports){
+},{"stream":33,"util":36}],43:[function(require,module,exports){
 ;(function () {
 
   var
@@ -11174,7 +11334,7 @@ var isArray = Array.isArray || function (xs) {
 
 }());
 
-},{}],42:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 var stream = require('stream')
 var bops = require('bops')
 var util = require('util')
@@ -11225,7 +11385,7 @@ module.exports = function(cb) {
 
 module.exports.ConcatStream = ConcatStream
 
-},{"bops":43,"stream":31,"util":34}],43:[function(require,module,exports){
+},{"bops":45,"stream":33,"util":36}],45:[function(require,module,exports){
 var proto = {}
 module.exports = proto
 
@@ -11246,9 +11406,9 @@ function mix(from, into) {
   }
 }
 
-},{"./copy.js":46,"./create.js":47,"./from.js":48,"./is.js":49,"./join.js":50,"./read.js":52,"./subarray.js":53,"./to.js":54,"./write.js":55}],44:[function(require,module,exports){
-module.exports=require(37)
-},{}],45:[function(require,module,exports){
+},{"./copy.js":48,"./create.js":49,"./from.js":50,"./is.js":51,"./join.js":52,"./read.js":54,"./subarray.js":55,"./to.js":56,"./write.js":57}],46:[function(require,module,exports){
+module.exports=require(39)
+},{}],47:[function(require,module,exports){
 module.exports = to_utf8
 
 var out = []
@@ -11323,7 +11483,7 @@ function reduced(list) {
   return out
 }
 
-},{}],46:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 module.exports = copy
 
 var slice = [].slice
@@ -11377,12 +11537,12 @@ function slow_copy(from, to, j, i, jend) {
   }
 }
 
-},{}],47:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 module.exports = function(size) {
   return new Uint8Array(size)
 }
 
-},{}],48:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 module.exports = from
 
 var base64 = require('base64-js')
@@ -11442,13 +11602,13 @@ function from_base64(str) {
   return new Uint8Array(base64.toByteArray(str)) 
 }
 
-},{"base64-js":44}],49:[function(require,module,exports){
+},{"base64-js":46}],51:[function(require,module,exports){
 
 module.exports = function(buffer) {
   return buffer instanceof Uint8Array;
 }
 
-},{}],50:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 module.exports = join
 
 function join(targets, hint) {
@@ -11486,7 +11646,7 @@ function get_length(targets) {
   return size
 }
 
-},{}],51:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 var proto
   , map
 
@@ -11508,7 +11668,7 @@ function get(target) {
   return out
 }
 
-},{}],52:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 module.exports = {
     readUInt8:      read_uint8
   , readInt8:       read_int8
@@ -11597,14 +11757,14 @@ function read_double_be(target, at) {
   return dv.getFloat64(at + target.byteOffset, false)
 }
 
-},{"./mapped.js":51}],53:[function(require,module,exports){
+},{"./mapped.js":53}],55:[function(require,module,exports){
 module.exports = subarray
 
 function subarray(buf, from, to) {
   return buf.subarray(from || 0, to || buf.length)
 }
 
-},{}],54:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 module.exports = to
 
 var base64 = require('base64-js')
@@ -11642,7 +11802,7 @@ function to_base64(buf) {
 }
 
 
-},{"base64-js":44,"to-utf8":45}],55:[function(require,module,exports){
+},{"base64-js":46,"to-utf8":47}],57:[function(require,module,exports){
 module.exports = {
     writeUInt8:      write_uint8
   , writeInt8:       write_int8
@@ -11730,7 +11890,7 @@ function write_double_be(target, value, at) {
   return dv.setFloat64(at + target.byteOffset, value, false)
 }
 
-},{"./mapped.js":51}],56:[function(require,module,exports){
+},{"./mapped.js":53}],58:[function(require,module,exports){
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -14110,7 +14270,7 @@ function hasOwnProperty(obj, prop) {
 },{"_shims":5}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],57:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -14164,5 +14324,5 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}]},{},[19])
+},{}]},{},[21])
 ;

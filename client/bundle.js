@@ -1,66 +1,4 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
-var io          = require('socket.io-client');
-
-global.io = io;
-
-module.exports = Client;
-
-function Client() {
-  this.initialized = false;
-}
-
-Client.prototype.connect = function (host, options, callback) {
-  var self = this;
-  if (typeof callback === 'undefined') {
-    callback = options;
-    options  = {};
-  }
-  options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
-  options['max reconnection attempts'] = options['max reconnection attempts'] ? options ['max reconnection attempts'] : Infinity;
-  this.host = host;
-  this.options = options;
-  this.callback = callback;
-
-  this.socket = io.connect(host, options);
-  this.socket.on('init', function (json) {
-    var state = State.fromJSON(json.state);
-
-    if (self.initialized) {
-      return self.state.reinit(json.cid, self, state);
-    }
-
-    self.initialized = true;
-    self.state = state;
-    self.state.init(json.cid, self);
-    callback(self.state);
-  });
-};
-
-Client.prototype.reconnect = function () {
-  return this.connect(this.host, this.options, this.callback);
-};
-
-Client.prototype.disconnect = function () {
-  return this.socket.disconnect();
-};
-
-Client.prototype.yieldPush = function (pushState) {
-  var state = this.state;
-  this.socket.emit('YieldPush', pushState, function (stateJson) {
-    var pullState = State.fromJSON(stateJson);
-    state.yieldPull(pullState);
-  });
-};
-
-Client.prototype.flushPush = function (pushState, flushPull) {
-  var state = this.state;
-  this.socket.emit('FlushPush', pushState, function (stateJson) {
-    var pullState = State.fromJSON(stateJson);
-    flushPull(pullState);
-  });
-};
-},{"../shared/State":19,"socket.io-client":8}],2:[function(require,module,exports){
 var State = require('../shared/State');
 
 module.exports = State;
@@ -137,31 +75,86 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":19}],3:[function(require,module,exports){
-var Client = require('./Client');
+},{"../shared/State":18}],2:[function(require,module,exports){
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
+var io          = require('socket.io-client');
 
-module.exports = CClient;
+global.io = io;
 
-function CClient() {
-  this.client = new Client(this.state);
+module.exports = Client;
+
+function Client() {
+  this.initialized = false;
+  this.listeners = {};
 }
 
-CClient.prototype.connect = function (host, options, callback) {
-  return this.client.connect(host, options, callback);
+Client.prototype.connect = function (host, options, connected, reconnected) {
+  var self = this;
+  if (typeof options === 'function') {
+    reconnected = connected;
+    connected = options;
+    options  = {};
+  }
+  options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
+  options['max reconnection attempts'] = options['max reconnection attempts'] ? options ['max reconnection attempts'] : Infinity;
+  this.host = host;
+  this.options = options;
+  this.connected = connected;
+  this.reconnected = reconnected;
+
+  this.socket = io.connect(host, options);
+  this.socket.on('init', function (json) {
+    var state = State.fromJSON(json.state);
+
+    if (self.initialized) {
+      self.state.reinit(json.cid, self, state);
+      if (typeof reconnected === 'function') {
+        reconnected(self.state);
+      }
+      return;
+    }
+
+    self.initialized = true;
+    self.state = state;
+    self.state.init(json.cid, self);
+    connected(self.state);
+  });
 };
 
-CClient.prototype.close = function () {
-  this.client.disconnect();
+// only connect/disconnect
+Client.prototype.on = function (event, listener) {
+  this.listeners[event] = listener;
 };
 
-CClient.prototype.disconnect = function () {
-  this.client.disconnect();
+Client.prototype.reconnect = function () {
+  console.log('reconnecting: ' + this.options);
+  return this.connect(this.host, this.options, this.connected, this.reconnected);
 };
 
-CClient.prototype.reconnect = function () {
-  this.client.reconnect();
+Client.prototype.disconnect = function () {
+  return this.socket.disconnect();
 };
-},{"./Client":1}],4:[function(require,module,exports){
+
+Client.prototype.close = function () {
+  return this.disconnect();
+};
+
+Client.prototype.yieldPush = function (pushState) {
+  var state = this.state;
+  this.socket.emit('YieldPush', pushState, function (stateJson) {
+    var pullState = State.fromJSON(stateJson);
+    state.yieldPull(pullState);
+  });
+};
+
+Client.prototype.flushPush = function (pushState, flushPull) {
+  var state = this.state;
+  this.socket.emit('FlushPush', pushState, function (stateJson) {
+    var pullState = State.fromJSON(stateJson);
+    flushPull(pullState);
+  });
+};
+},{"../shared/State":18,"socket.io-client":7}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
 var ClientState     = require('./ClientState');
 
@@ -189,7 +182,7 @@ var CloudTypes = {
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":9,"../shared/CEntity":11,"../shared/CInt":13,"../shared/CString":14,"./ClientState":2,"./CloudTypeClient":3,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],5:[function(require,module,exports){
+},{"../shared/CArray":8,"../shared/CEntity":10,"../shared/CInt":12,"../shared/CString":13,"./ClientState":1,"./CloudTypeClient":2,"./views/EntryView":4,"./views/ListView":5,"./views/View":6}],4:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -231,7 +224,7 @@ function defaults(entryView) {
 }
 
 module.exports = EntryView;
-},{"./View":7}],6:[function(require,module,exports){
+},{"./View":6}],5:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -299,7 +292,7 @@ function insertAt(parent, index, html) {
 }
 
 module.exports = ListView;
-},{"./View":7}],7:[function(require,module,exports){
+},{"./View":6}],6:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -364,7 +357,7 @@ View.prototype.initialize = function () {
 };
 
 module.exports = View;
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -4238,7 +4231,7 @@ if (typeof define === "function" && define.amd) {
   define([], function () { return io; });
 }
 })();
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var CloudType   = require('./CloudType');
 var Indexes     = require('./Indexes');
 var Property    = require('./Property');
@@ -4313,7 +4306,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":10,"./CloudType":15,"./Indexes":16,"./Properties":17,"./Property":18,"util":21}],10:[function(require,module,exports){
+},{"./CArrayEntry":9,"./CloudType":14,"./Indexes":15,"./Properties":16,"./Property":17,"util":20}],9:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -4367,7 +4360,7 @@ CArrayEntry.prototype.deleted = function () {
 CArrayEntry.prototype.index = function () {
   return Indexes.createIndex(this.indexes);
 };
-},{"./Indexes":16}],11:[function(require,module,exports){
+},{"./Indexes":15}],10:[function(require,module,exports){
 var CArray     = require('./CArray');
 var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
@@ -4507,7 +4500,7 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":9,"./CEntityEntry":12,"./Indexes":16,"./Properties":17,"./Property":18}],12:[function(require,module,exports){
+},{"./CArray":8,"./CEntityEntry":11,"./Indexes":15,"./Properties":16,"./Property":17}],11:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CEntityEntry;
@@ -4546,7 +4539,7 @@ CEntityEntry.prototype.deleted = function () {
 CEntityEntry.prototype.delete = function () {
   return this.cEntity.delete(this);
 };
-},{"./Indexes":16}],13:[function(require,module,exports){
+},{"./Indexes":15}],12:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CInt;
@@ -4632,7 +4625,7 @@ CInt.prototype.replaceBy = function (cint) {
 CInt.prototype.isDefault = function () {
   return (this.get() === 0);
 };
-},{"./CloudType":15,"util":21}],14:[function(require,module,exports){
+},{"./CloudType":14,"util":20}],13:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CString;
@@ -4744,7 +4737,7 @@ CString.prototype.replaceBy = function (cstring) {
 CString.prototype.isDefault = function () {
   return (this.get() === '');
 };
-},{"./CloudType":15,"util":21}],15:[function(require,module,exports){
+},{"./CloudType":14,"util":20}],14:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -4777,7 +4770,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -4867,7 +4860,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -4915,7 +4908,7 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":18}],18:[function(require,module,exports){
+},{"./Property":17}],17:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 function Property(name, ctypeName, cArray, values) {
@@ -4992,7 +4985,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":15}],19:[function(require,module,exports){
+},{"./CloudType":14}],18:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5220,7 +5213,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":9,"./CEntity":11,"./CloudType":15,"util":21}],20:[function(require,module,exports){
+},{"./CArray":8,"./CEntity":10,"./CloudType":14,"util":20}],19:[function(require,module,exports){
 
 
 //
@@ -5438,7 +5431,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],21:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5983,5 +5976,5 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":20}]},{},[4])
+},{"_shims":19}]},{},[3])
 ;

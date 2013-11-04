@@ -8,6 +8,8 @@ var State, connect, disconnect;
 
 var client = CloudTypes.createClient();
 client.connect(window.location.hostname, function (state) {
+  // on initial connect
+
   State = state; // debug
   var app = new Application(state);
 
@@ -18,6 +20,11 @@ client.connect(window.location.hostname, function (state) {
   app.install();
   app.update();
 
+  setupAvailabilityButtons();
+
+// on reconnect
+}, function () {
+  setupAvailabilityButtons(); // needs to be called again since it relies on the (new) socket of the client!
 });
 
 
@@ -62,17 +69,6 @@ Application.prototype.install = function () {
     app.update();
   });
 
-  // install disconnect/disconnect
-  $('#disconnect-btn').click(function () {
-    $('.network-actions button').removeClass('active');
-    $(this).addClass('active');
-    client.disconnect();
-  });
-  $('#connect-btn').click(function () {
-    $('.network-actions button').removeClass('active');
-    $(this).addClass('active');
-    client.reconnect();
-  });
 };
 
 
@@ -116,11 +112,9 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
 
   showBought: function () {
     var app = this.app;
-    var entryView = this;
-    var selected = this.html.hasClass('selected');
 
     /* if already selected: hide bought form */
-    if (selected) {
+    if (this.html.hasClass('selected')) {
       return this.hideBought();
     }
 
@@ -129,36 +123,28 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
     // remove other bought forms
     app.groceryView.hideBought();
 
-    // create bought form + set li to selected
+    // set up bought form + set li to selected
     this.html.addClass('selected');
-    this.bought = $("<form role=form class=form-inline id=boughtgroceryform>" +
-                      "<div class=form-group>" +
-                        "<div class=input-group>" +
-                          "<span class='input-group-addon glyphicon glyphicon-shopping-cart'></span>" +
-                          "<input type='text' id='boughtcount' class=form-control placeholder='Amount Bought'>" +
-                        "</div>" +
-                      "</div>" +
-                      "<div class=form-group>" +
-                        "<input type=submit class=form-control id=boughtgrocerysubmit value=Ok class=btn>" +
-                      "</div>" +
-                    "</form>").appendTo(this.html);
+    this.bought = $("#boughtgroceryform")
+        .data('entry', this.entry.key('name'))
+        .show()
+        .appendTo(this.html);
+
+    // reset input
+    $('#boughtcount').val('');
 
     // on submit of bought form
     $('#boughtgrocerysubmit').click(function (event) {
       event.preventDefault();
 
       // scrape values
-      var name = entryView.entry.key('name');
+      var name = $(this).data('name');
       var toBuy = parseInt($('#boughtcount').val(), 10);
 
       // actual bought operation + update view
       app.bought(name, toBuy);
       app.update();
     });
-
-    // prevent bubbling for input
-    $('#boughtcount').click(function () { return false; });
-
   },
 
   hideBought: function () {
@@ -168,6 +154,11 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
       form.remove();
     }
   }
+});
+
+// prevent bubbling for input of bought input
+$(function () {
+  $('#boughtcount').click(function () { return false; });
 });
 
 
@@ -182,3 +173,34 @@ function start(app, ms) {
   }, ms);
   stop = function () { clearInterval(yielding); };
 }
+
+
+
+// Availability Buttons
+////////////////////////
+function setupAvailabilityButtons() {
+  showConnect();
+  client.socket.on('disconnect', showDisconnect);
+}
+
+function showConnect() {
+  console.log('connected');
+  $('#disconnect-btn').removeClass('active');
+  $('#connect-btn').addClass('active');
+}
+function showDisconnect() {
+  console.log('disconeected');
+  $('#connect-btn').removeClass('active');
+  $('#disconnect-btn').addClass('active');
+}
+// install disconnect/disconnect
+$('#disconnect-btn').click(function () {
+  if (!$('#disconnect-btn').hasClass('active')) {
+    client.disconnect();
+  }
+});
+$('#connect-btn').click(function () {
+  if (!$('#connect-btn').hasClass('active')) {
+    client.reconnect();
+  }
+});

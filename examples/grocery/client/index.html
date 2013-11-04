@@ -37,23 +37,35 @@
     <p class="lead">Add new groceries using the form at the bottom <br> and mark the amount you bought of an item by clicking it in the list. Easily play with connectivity using connect/disconnect.</p>
 
         <div class="center-block">
-          <div><p>Total to buy: </p><span class="totalitems"></span></div>
+          <p>Total to buy: </p><span class="totalitems"></span>
 
           <ul class='list-group grocerylist'></ul>
 
           <form id="newgroceryform" role="form" class="form-inline">
-          <div class="form-group">
-            <label class="sr-only" for="newgroceryname">Grocery name</label>
-            <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
-          </div>
-          <div class="form-group">
-            <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
-            <input type="text" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
-          </div>
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
-          </div>
-        </form>
+            <div class="form-group">
+              <label class="sr-only" for="newgroceryname">Grocery name</label>
+              <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
+              <input type="text" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
+            </div>
+          </form>
+
+          <form role=form class='form-inline hidden' id=boughtgroceryform>
+            <div class=form-group>
+              <div class=input-group>
+                <span class='input-group-addon glyphicon glyphicon-shopping-cart'></span>
+                <input type='text' id='boughtcount' class=form-control placeholder='Amount Bought'>
+              </div>
+            </div>
+            <div class=form-group>
+              <input type=submit class=form-control id=boughtgrocerysubmit value=Ok class=btn>
+            </div>
+          </form>
 
         </div>
 

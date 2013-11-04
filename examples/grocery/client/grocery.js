@@ -27,21 +27,22 @@ function Application (state) {
   this.state = state;
   this.Grocery    = state.get('Grocery');
   this.totalItems = state.get('totalItems');
-  this.groceryView    = new GroceryView(this.Grocery, this);
-  this.totalItemsView = new TotalItemsView(this.totalItems);
-
+  this.groceryView    = new GroceryView({app: this, html: '.grocerylist'});
+  this.totalItemsView = new TotalItemsView({app: this, html: '.totalitems'});
 }
 
 Application.prototype.toBuy = function (name, count) {
   console.log("have to buy " + count + " more of " + name);
   this.totalItems.add(count);
   this.Grocery.get(name).get('toBuy').add(count);
+  this.state.yield();
 };
 
 Application.prototype.bought = function (name, count) {
   console.log("bought " + count + " of " + name);
   this.totalItems.add(-count);
   this.Grocery.get(name).get('toBuy').add(-count);
+  this.state.yield();
 };
 
 Application.prototype.update = function () {
@@ -51,18 +52,14 @@ Application.prototype.update = function () {
 
 Application.prototype.install = function () {
   var app = this;
-  // install views
-  $('.grocerylist')
-      .append(this.totalItemsView.html())
-      .append(this.groceryView.html());
 
   // install create new grocery
   $('#newgroceryform').submit(function (event) {
+    event.preventDefault();
     var name = $('#newgroceryname').val();
     var toBuy = parseInt($('#newgrocerytobuy').val(), 10);
     app.toBuy(name, toBuy);
     app.update();
-    event.preventDefault();
   });
 
   // install disconnect/disconnect
@@ -81,169 +78,97 @@ Application.prototype.install = function () {
 
 // TotalItemsView
 //////////////////
-function TotalItemsView(total) {
-  this.total = total;
-  this.countView = $('<span>');
-  this.p = $("<p>Total to buy: </p>")
-      .append(this.countView);
-}
+var TotalItemsView = CloudTypes.View.extend({
+  update: function () {
+    this.html.html(this.app.totalItems.get());
+  }
+});
 
-TotalItemsView.prototype.html = function () {
-  return this.p;
-};
-
-TotalItemsView.prototype.update = function () {
-  this.countView.html(this.total.get());
-};
 
 // GroceryView
 ///////////////
+var GroceryView = CloudTypes.ListView.extend({
+  produce: function () {
+    return this.app.Grocery.entries('toBuy');
+  },
 
-function GroceryView(Grocery, app) {
-  this.app = app;
-  this.Grocery = Grocery;
-  this.views = {};
-  this.ul = $("<ul class='list-group'>");
-}
+  createItemView: function (item) {
+    return new GroceryEntryView({entry: item, app: this.app});
+  },
 
-GroceryView.prototype.html = function () {
-  return this.ul;
-};
-
-GroceryView.prototype.update = function () {
-  var ul    = this.ul;
-  var views = this.views;
-  var app   = this.app;
-  var ctr = 0;
-  var newViews = {};
-
-  // create new views or update existing ones
-  this.Grocery.entries('toBuy').forEach(function (grocery) {
-    var name = grocery.key('name');
-    var view = views[name];
-
-    // view already present: update + delete from old views
-    if (typeof view !== 'undefined') {
-      view.update();
-      delete views[name];
-
-      // view not present: create, update and insert html in DOM
-    } else {
-      console.log("creating new view")
-      view = new GroceryEntryView(grocery, app);
-      view.update();
-      insertAt(ul, ctr, view.html());
-    }
-
-   newViews[name] = view;
-  });
-
-  // remove old views that have no model anymore
-  Object.keys(views).forEach(function (name) {
-    views[name].html().remove();
-    delete views[name];
-  });
-
-  // set the new views
-  this.views = newViews;
-};
-
-GroceryView.prototype.hideBought = function () {
-  var views = this.views;
-  Object.keys(views).forEach(function (name) {
-    views[name].hideBought();
-  });
-};
-
+  hideBought: function () {
+    var views = this.views;
+    Object.keys(views).forEach(function (name) {
+      views[name].hideBought();
+    });
+  }
+});
 
 // GroceryEntryView
 ////////////////////
-function GroceryEntryView(grocery, app) {
-  var entryView = this;
-  this.app = app;
-  this.grocery = grocery;
-  this.nameView = $("<span>");
-  this.toBuyView = $("<span class=badge>");
-  this.li = $("<li class='list-group-item grocery-item'></li>")
-      .html(this.nameView)
-      .append(this.toBuyView)
-      .click(function () { entryView.showBought(); });
-}
+var GroceryEntryView = CloudTypes.EntryView.extend({
+  initialize: function () {
+    var self = this;
+    this.html = $("<li class='list-group-item grocery-item'><span class='key-name'></span><span class='badge property-toBuy'></span></li>")
+        .click(function () { self.showBought(); });
+    GroceryEntryView.__super__.initialize.call(this);
+  },
 
-GroceryEntryView.prototype.html = function () {
-  return this.li;
-};
+  showBought: function () {
+    var app = this.app;
+    var entryView = this;
+    var selected = this.html.hasClass('selected');
 
-GroceryEntryView.prototype.update = function () {
-  this.nameView.html(this.grocery.key('name'));
-  this.toBuyView.html(this.grocery.get('toBuy').get());
-};
+    /* if already selected: hide bought form */
+    if (selected) {
+      return this.hideBought();
+    }
 
-GroceryEntryView.prototype.showBought = function () {
-  var app = this.app;
-  var entryView = this;
-  var selected = this.li.hasClass('selected');
+    /* if not selected: create + show bought form */
 
-  /* if already selected: hide bought form */
-  if (selected) {
-    return this.hideBought();
-  }
+    // remove other bought forms
+    app.groceryView.hideBought();
 
-  /* if not selected: create + show bought form */
-
-  // remove other bought forms
-  app.groceryView.hideBought();
-
-  // create bought form + set li to selected
-  this.li.addClass('selected');
-  this.bought = $("<form role=form class=form-inline id=boughtgroceryform>" +
-                    "<div class=form-group>" +
-                      "<div class=input-group>" +
-                        "<span class='input-group-addon glyphicon glyphicon-shopping-cart'></span>" +
-                        "<input type='text' id='boughtcount' class=form-control placeholder='Amount Bought'>" +
+    // create bought form + set li to selected
+    this.html.addClass('selected');
+    this.bought = $("<form role=form class=form-inline id=boughtgroceryform>" +
+                      "<div class=form-group>" +
+                        "<div class=input-group>" +
+                          "<span class='input-group-addon glyphicon glyphicon-shopping-cart'></span>" +
+                          "<input type='text' id='boughtcount' class=form-control placeholder='Amount Bought'>" +
+                        "</div>" +
                       "</div>" +
-                    "</div>" +
-                    "<div class=form-group>" +
-                      "<input type=submit class=form-control id=boughtgrocerysubmit value=Bought class=btn>" +
-                    "</div>" +
-                  "</form>").appendTo(this.li);
+                      "<div class=form-group>" +
+                        "<input type=submit class=form-control id=boughtgrocerysubmit value=Ok class=btn>" +
+                      "</div>" +
+                    "</form>").appendTo(this.html);
 
-  // on submit of bought form
-  $('#boughtgrocerysubmit').click(function (event) {
-    event.preventDefault();
+    // on submit of bought form
+    $('#boughtgrocerysubmit').click(function (event) {
+      event.preventDefault();
 
-    // scrape values
-    var name = entryView.grocery.key('name');
-    var toBuy = parseInt($('#boughtcount').val(), 10);
+      // scrape values
+      var name = entryView.entry.key('name');
+      var toBuy = parseInt($('#boughtcount').val(), 10);
 
-    // actual bought operation + update view
-    app.bought(name, toBuy);
-    app.update();
-  });
+      // actual bought operation + update view
+      app.bought(name, toBuy);
+      app.update();
+    });
 
-  // prevent bubbling for input
-  $('#boughtcount').click(function () { return false; });
+    // prevent bubbling for input
+    $('#boughtcount').click(function () { return false; });
 
-};
+  },
 
-GroceryEntryView.prototype.hideBought = function () {
-  if (this.bought) {
-    this.bought.remove();
-    this.li.removeClass('selected');
+  hideBought: function () {
+    var form = this.html.find('form');
+    if (form.length > 0) {
+      this.html.removeClass('selected');
+      form.remove();
+    }
   }
-};
-
-
-// Utility
-///////////
-
-function insertAt(parent, index, html) {
-  console.log('inserting at ' + index + ' ' + html);
-  console.log(html);
-  if (index === 0)
-    return parent.prepend(html);
-  parent.find(':nth-child(' + index + ')').after(html);
-}
+});
 
 
 // Client

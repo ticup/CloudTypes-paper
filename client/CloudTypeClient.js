@@ -1,5 +1,4 @@
 var Client = require('./Client');
-var ClientState  = require('./ClientState');
 
 module.exports = CClient;
 

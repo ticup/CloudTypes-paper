@@ -4,7 +4,7 @@ module.exports = CEntityEntry;
 
 function CEntityEntry(cEntity, indexes) {
   this.cEntity = cEntity;
-  this.indexes = indexes;
+  this.indexes = Indexes.getIndexes(indexes, cEntity);
 }
 //CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
 
@@ -27,6 +27,10 @@ CEntityEntry.prototype.forEachIndex = function (callback) {
     var type = self.cEntity.indexes.getType(i++);
     callback(type, index);
   });
+};
+
+CEntityEntry.prototype.deleted = function () {
+  return (this.cEntity.state.deleted(this.indexes, this.cEntity));
 };
 
 CEntityEntry.prototype.delete = function () {

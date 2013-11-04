@@ -22,6 +22,15 @@ Indexes.prototype.getType = function (position) {
   return this.types[position];
 };
 
+Indexes.prototype.getName = function (position) {
+  return this.names[position];
+};
+
+Indexes.prototype.getTypeOf = function (name) {
+  var position = this.getPositionOf(name);
+  return this.types[position];
+};
+
 Indexes.prototype.getPositionOf = function (name) {
   return this.names.indexOf(name);
 };
@@ -37,9 +46,21 @@ Indexes.createIndex = function createIndex(indexes) {
   return indexes.join(".");
 };
 
-Indexes.getIndexes = function getIndexes(index) {
-  if (typeof index === 'string')
-    return index.split(".");
+Indexes.getIndexes = function getIndexes(index, cArray) {
+  if (typeof index === 'string') {
+    var index = index.split(".");
+    for (var i = 0; i<index.length; i++) {
+      var type = cArray.indexes.getType(i);
+      if (type === 'string') {
+        break;
+      }
+      if (type === 'int') {
+        index[i] = parseInt(index[i], 10);
+        break;
+      }
+      index[i] = cArray.state.get(type).get(index[i]);
+    }
+  }
   return index;
 };
 

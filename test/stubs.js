@@ -32,7 +32,7 @@ exports.groceryUnchanged = {
   type        : 'Array',
   indexes     : {
     names: ['name'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -53,7 +53,7 @@ exports.productUnchanged = {
   type        : 'Array',
   indexes     : {
     names: ['id'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -82,7 +82,7 @@ exports.customerUnchanged = {
   type        : 'Entity',
   indexes     : {
     names: ['uid'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -102,7 +102,7 @@ exports.orderUnchanged = {
   type        : 'Entity',
   indexes     : {
     names: ['uid', 'customer'],
-    types: ['String', 'Customer']
+    types: ['string', 'Customer']
   },
   properties  : [
     {
@@ -163,7 +163,7 @@ exports.groceryPoluted = {
   type        : 'Array',
   indexes     : {
     names: ['name'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -178,7 +178,7 @@ exports.productPoluted = {
   type        : 'Array',
   indexes     : {
     names: ['id'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -199,7 +199,7 @@ exports.groceryChanged = {
   type        : 'Array',
   indexes     : {
     names: ['name'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -220,7 +220,7 @@ exports.productChanged = {
   type   : 'Array',
   indexes: {
     names: ['id'],
-    types: ['String']
+    types: ['string']
   },
   properties: [
     {
@@ -250,7 +250,7 @@ exports.customerChanged = {
   type        : 'Entity',
   indexes     : {
     names: ['uid'],
-    types: ['String']
+    types: ['string']
   },
   properties  : [
     {
@@ -277,7 +277,7 @@ exports.orderChanged = {
   type        : 'Entity',
   indexes     : {
     names: ['uid', 'customer'],
-    types: ['String', 'Customer']
+    types: ['string', 'Customer']
   },
   properties  : [
     {

@@ -36,9 +36,12 @@
     <h1>CloudTypes Example: Grocery List</h1>
     <p class="lead">Add new groceries using the form at the bottom <br> and mark the amount you bought of an item by clicking it in the list. Easily play with connectivity using connect/disconnect.</p>
 
-        <div class="grocerylist center-block"></div>
+        <div class="center-block">
+          <div><p>Total to buy: </p><span class="totalitems"></span></div>
 
-        <form id="newgroceryform" role="form" class="form-inline">
+          <ul class='list-group grocerylist'></ul>
+
+          <form id="newgroceryform" role="form" class="form-inline">
           <div class="form-group">
             <label class="sr-only" for="newgroceryname">Grocery name</label>
             <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
@@ -52,7 +55,7 @@
           </div>
         </form>
 
-
+        </div>
 
 
   </div>

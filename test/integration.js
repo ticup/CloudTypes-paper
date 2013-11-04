@@ -246,7 +246,7 @@ describe('Integration #', function () {
 
       // server code
       server = CloudTypeServer.createServer();
-      array = CArray.declare([{name: "String"}, {buyer: "String"}], {toBuy: "CInt", fromShop: "CString"});
+      array = CArray.declare([{name: "string"}, {buyer: "string"}], {toBuy: "CInt", fromShop: "CString"});
       server.declare("Product", array);
       server.publish(8001);
 

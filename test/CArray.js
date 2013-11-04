@@ -11,7 +11,7 @@ var util        = require('util');
 
 
 function createCArray() {
-  var indexNames = [{name: "String"}];
+  var indexNames = [{name: "string"}];
   var properties = {toBuy: "CInt", shop: "CString"};
   var array = CArray.declare(indexNames, properties);
   return array;
@@ -26,7 +26,7 @@ describe('CArray', function () {
 
   // Private
   describe('#new(indexes, properties)', function () {
-    var indexes = [{name: "String"}];
+    var indexes = [{name: "string"}];
     var properties = {toBuy: "CInt"};
     var array = new CArray(indexes, properties);
     it('should create a new CArray object', function () {
@@ -105,7 +105,7 @@ describe('CArray', function () {
 
   // Public
   describe('#declare(indexNames, properties)', function () {
-    var indexNames = [{name: "String"}];
+    var indexNames = [{name: "string"}];
     var properties = {toBuy: "CInt"};
     var array = CArray.declare(indexNames, properties);
     it('should create a new CArray object', function () {

@@ -14,14 +14,14 @@ describe('CEntity state independent operations', function () {
   var entity;
 
   beforeEach(function () {
-    var indexNames = [{name: "String"}];
+    var indexNames = [{name: "string"}];
     var properties = {address: "CString"};
     entity = CEntity.declare(indexNames, properties);
   });
 
   // Private
   describe('#new(indexDeclarations, propertyDeclarations)', function () {
-    var indexNames = [{name: "foo", type: "String"}];
+    var indexNames = [{name: "foo", type: "string"}];
     var properties = {address: "CString"};
     var entity = new CEntity(indexNames, properties);
     it('should create a new CEntity object', function () {
@@ -98,7 +98,7 @@ describe('CEntity state independent operations', function () {
 
   // Public
   describe('#declare(indexNames, properties)', function () {
-    var indexNames = [{name: "String"}];
+    var indexNames = [{name: "string"}];
     var properties = {address: "CString"};
     var entity2 = CEntity.declare(indexNames, properties);
     it('should create a new CEntity object', function () {

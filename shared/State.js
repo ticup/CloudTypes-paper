@@ -30,7 +30,6 @@ State.prototype.declare = function (name, array) {
     array.name  = name;
     return this.arrays[name] = array;
 
-
   }
   // global (CloudType) => create proxy CArray
   if (typeof array.prototype !== 'undefined' && array.prototype instanceof CloudType) {
@@ -128,10 +127,11 @@ State.prototype.deleted = function (index, entity) {
     if (entity.deleted(index))
       return true;
     var del = false;
-    entry.forEachIndex(function (type, idx) {
-      var entity = self.get(type);
-      if (self.deleted(idx, entity))
-        del = true;
+    entry.forEachIndex(function (index) {
+      if (typeof index !== 'int' && typeof index !== 'string') {
+        if (index.deleted())
+          del = true;
+      }
     });
     return del;
   }
@@ -140,7 +140,7 @@ State.prototype.deleted = function (index, entity) {
   if (typeof entity !== 'undefined' && entity instanceof CArray) {
     var del = false;
     var entry = entity.get(index);
-    entry.forEachIndex(function (type, idx) {
+    entry.forEachIndex(function (idx, value, type) {
       var entity = self.get(type);
       if (self.deleted(idx, entity))
         del = true;

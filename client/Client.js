@@ -1,5 +1,4 @@
 var State       = require('../shared/State');
-var ClientState = require('./ClientState');
 var io          = require('socket.io-client');
 
 global.io = io;
@@ -25,7 +24,6 @@ Client.prototype.connect = function (host, options, callback) {
   this.socket.on('init', function (json) {
     var state = State.fromJSON(json.state);
 
-    console.log("got initialized");
     if (self.initialized) {
       return self.state.reinit(json.cid, self, state);
     }

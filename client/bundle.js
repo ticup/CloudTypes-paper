@@ -17,6 +17,7 @@ Client.prototype.connect = function (host, options, callback) {
     options  = {};
   }
   options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
+  options['max reconnection attempts'] = options['max reconnection attempts'] ? options ['max reconnection attempts'] : Infinity;
   this.host = host;
   this.options = options;
   this.callback = callback;

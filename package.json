@@ -8,7 +8,7 @@
     "type": "git",
     "url" : "https://github.com/ticup/CloudTypes.git"
   },
-  "engine": "node >= 0.4.1",
+  "node": "0.10.20",
   "dependencies": {
     "socket.io": "*",
     "socket.io-client": "*"

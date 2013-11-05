@@ -19,7 +19,7 @@ var ListView = View.extend({
     var newViews = {};
 
     // create new views or update existing ones
-    this.produce().forEach(function (item) {
+    this.value().forEach(function (item) {
       var id = item.index();
       var view = views[id];
 

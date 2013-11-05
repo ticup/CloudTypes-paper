@@ -8,6 +8,6 @@ var CloudTypes = require('../../../server/main.js');
 var server = CloudTypes.createServer();
 
 server.declare('totalItems', CloudTypes.CInt)
-      .declare('Grocery', CloudTypes.CEntity([{name: 'string'}], {toBuy: 'CInt'}));
+      .declare('Grocery',    CloudTypes.CArray([{name: 'string'}], {toBuy: 'CInt'}));
 
 module.exports = server;

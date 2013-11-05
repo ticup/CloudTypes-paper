@@ -12,7 +12,6 @@ State.prototype.init = function (cid, client) {
 };
 
 State.prototype.reinit = function (cid, client, state) {
-  console.log('reiniting');
   this.cid      = cid;
   this.client   = client;
   this.yieldPull(state);

@@ -20,6 +20,7 @@ CEntity.prototype = Object.create(CArray.prototype);
 
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
+  console.log('declaring entity');
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];

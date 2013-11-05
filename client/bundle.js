@@ -13,7 +13,6 @@ State.prototype.init = function (cid, client) {
 };
 
 State.prototype.reinit = function (cid, client, state) {
-  console.log('reiniting');
   this.cid      = cid;
   this.client   = client;
   this.yieldPull(state);
@@ -115,6 +114,7 @@ Client.prototype.connect = function (host, options, connected, reconnected) {
     }
 
     self.initialized = true;
+    console.log(state);
     self.state = state;
     self.state.init(json.cid, self);
     connected(self.state);
@@ -246,7 +246,7 @@ var ListView = View.extend({
     var newViews = {};
 
     // create new views or update existing ones
-    this.produce().forEach(function (item) {
+    this.value().forEach(function (item) {
       var id = item.index();
       var view = views[id];
 
@@ -4383,6 +4383,7 @@ CEntity.prototype = Object.create(CArray.prototype);
 
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
+  console.log('declaring entity');
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];

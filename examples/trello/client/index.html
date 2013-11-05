@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
 
   <!-- Custom styles for this template -->
-  <link href="grocery.css" rel="stylesheet">
+  <link href="trello.css" rel="stylesheet">
 
   <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!--[if lt IE 9]>
@@ -33,36 +33,25 @@
     <div class="clearfix"></div>
   <div class="text-center">
 
-    <h1>CloudTypes Example: Grocery List</h1>
-    <p class="lead">Add new groceries using the form at the bottom <br> and mark the amount you bought of an item by clicking it in the list. Track/Adjust connectivity using the online/offline buttons.</p>
+    <h1>CloudTypes Example: Trello</h1>
+    <p class="lead">Simplified version of <a href="http://www.trello.com">Trello</a>. There are Members, Task Lists and Tasks in a list that can be assigned to a Member.  Track/Adjust connectivity using the online/offline buttons.</p>
 
         <div class="center-block">
-          <p>Total to buy: </p><span class="totalitems"></span>
 
-          <ul class='list-group grocerylist'></ul>
+          <h2>Members</h2>
+          <ul class='list-group members'></ul>
 
-          <form id="newgroceryform" role="form" class="form-inline">
-            <div class="form-group">
-              <label class="sr-only" for="newgroceryname">Grocery name</label>
-              <input type="text" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
-              <input type="text" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
-            </div>
-            <div class="form-group">
-              <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
-            </div>
-          </form>
+          <buttton id="createmember" class="btn btn-primary">Add</buttton>
 
-          <form role=form class='hide form-inline ' id=boughtgroceryform>
+
+          <form role="form" class="hide form-inline" id="editmember">
             <div class=form-group>
               <div class=input-group>
-                <input type='text' id='boughtcount' class=form-control placeholder='Amount Bought'>
+                <input id="editmembername" value="" placeholder="Enter new name">
               </div>
             </div>
-            <div class=form-group>
-              <input type='submit' class='form-control btn' id='boughtgrocerysubmit' value='OK' >
+            <div class="form-group">
+              <input type="submit" class="form-control btn" id="editmembersubmit" value="OK">
             </div>
           </form>
 
@@ -86,6 +75,6 @@
 <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.1/js/bootstrap.min.js"></script>
 <script src="../../../client/bundle.js"></script>
-<script src="grocery.js"></script>
+<script src="trello.js"></script>
 </body>
 </html>

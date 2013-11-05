@@ -69,6 +69,19 @@ Application.prototype.install = function () {
     app.update();
   });
 
+  // install bought grocery
+  $('#boughtgroceryform').submit(function (event) {
+    event.preventDefault();
+
+    // scrape values
+    var name = $(this).data('entry');
+    var toBuy = parseInt($('#boughtcount').val(), 10);
+
+    // actual bought operation + update view
+    app.bought(name, toBuy);
+    app.update();
+  });
+
 };
 
 
@@ -84,7 +97,8 @@ var TotalItemsView = CloudTypes.View.extend({
 // GroceryView
 ///////////////
 var GroceryView = CloudTypes.ListView.extend({
-  produce: function () {
+  value: function () {
+    console.log(this.app.Grocery);
     return this.app.Grocery.entries('toBuy');
   },
 
@@ -132,19 +146,6 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
 
     // reset input
     $('#boughtcount').val('');
-
-    // on submit of bought form
-    $('#boughtgrocerysubmit').click(function (event) {
-      event.preventDefault();
-
-      // scrape values
-      var name = $(this).data('entry');
-      var toBuy = parseInt($('#boughtcount').val(), 10);
-
-      // actual bought operation + update view
-      app.bought(name, toBuy);
-      app.update();
-    });
   },
 
   hideBought: function () {
@@ -152,6 +153,7 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
     if (form.length > 0) {
       this.html.removeClass('selected');
       form.addClass('hide');
+      $('body').append(form);
     }
   }
 });
@@ -160,6 +162,7 @@ var GroceryEntryView = CloudTypes.EntryView.extend({
 $(function () {
   $('#boughtcount').click(function () { return false; });
 });
+
 
 
 // Client

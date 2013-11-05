@@ -37,6 +37,7 @@ Client.prototype.connect = function (host, options, connected, reconnected) {
     }
 
     self.initialized = true;
+    console.log(state);
     self.state = state;
     self.state.init(json.cid, self);
     connected(self.state);

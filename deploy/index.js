@@ -19,9 +19,9 @@ server.publish(port, __dirname + '/../');
 
 // setup xhr-polling only for Heroku
 if (process.env.HEROKU) {
-  proejcts.server.io.configure(function () {
-    proejcts.server.io.set("transports", ["xhr-polling"]);
-    proejcts.server.io.set("polling duration", 10);
+  server.server.io.configure(function () {
+    server.server.io.set("transports", ["xhr-polling"]);
+    server.server.io.set("polling duration", 10);
   });
 }
 

@@ -98,7 +98,6 @@ var TotalItemsView = CloudTypes.View.extend({
 ///////////////
 var GroceryView = CloudTypes.ListView.extend({
   value: function () {
-    console.log(this.app.Grocery);
     return this.app.Grocery.entries('toBuy');
   },
 

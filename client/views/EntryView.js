@@ -7,8 +7,8 @@ var View = require('./View');
 /////////////
 var EntryView = View.extend({
   initialize: function () {
-    EntryView.__super__.initialize.call(this);
     defaults(this);
+    EntryView.__super__.initialize.call(this);
     var html = this.html;
     this.entry.forEachKey(function (name, value) {
       html.find('.key-'+name).html(value);

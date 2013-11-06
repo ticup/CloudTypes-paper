@@ -121,9 +121,9 @@ describe('CEntity state independent operations', function () {
       var entry = entity.get('foo');
       should.exist(entry);
       entry.should.be.an.instanceof(CEntityEntry);
-      entry.should.have.property('cEntity');
+      entry.should.have.property('cArray');
       entry.should.have.property('indexes');
-      entry.cEntity.should.equal(entity);
+      entry.cArray.should.equal(entity);
     });
   });
 

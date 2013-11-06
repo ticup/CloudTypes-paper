@@ -40,7 +40,11 @@ CArray.prototype.entries = function (propertyName) {
 };
 
 CArray.prototype.getProperty = function (property) {
-  return this.properties.get(property);
+  var result = this.properties.get(property);
+  if (typeof result === 'undefined') {
+    throw Error(this.name + " does not have property " + property);
+  }
+  return result;
 };
 
 CArray.prototype.addProperty = function (property) {

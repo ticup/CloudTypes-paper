@@ -41,7 +41,6 @@ State.prototype.declare = function (name, array) {
     return this.arrays[name] = array;
   }
   // Either declare CArray (CEntity is also a CArray) or CloudType, nothing else.
-  console.log(require('util').inspect(array));
   throw "Need a CArray or CloudType to declare: " + array;
 };
 
@@ -109,14 +108,12 @@ State.prototype.propagate = function () {
   var self = this;
   var changed = false;
   this.forEachEntity(function (entity) {
-    entity.forEachProperty(function (property) {
-      property.forEachIndex(function (index) {
-        if (entity.exists(index) && self.deleted(index, entity)) {
-          entity.setDeleted(index);
-        }
-      })
-    })
-  })
+    entity.forEachState(function (index) {
+      if (entity.exists(index) && self.deleted(index, entity)) {
+        entity.setDeleted(index);
+      }
+    });
+  });
 };
 
 State.prototype.deleted = function (index, entity) {
@@ -124,14 +121,18 @@ State.prototype.deleted = function (index, entity) {
   // Entity
   if (typeof entity !== 'undefined' && entity instanceof CEntity) {
     var entry = entity.get(index);
+//    console.log(index + ' of ' + entity.name + ' deleted ?');
+
     if (entity.deleted(index))
       return true;
     var del = false;
-    entry.forEachIndex(function (index) {
-      if (typeof index !== 'int' && typeof index !== 'string') {
-        if (index.deleted())
-          del = true;
-      }
+    entry.forEachKey(function (name, value) {
+      var type = entity.indexes.getTypeOf(name);
+      if (typeof type !== 'undefined')
+        type = self.get(type);
+//      console.log('index deleted? ' + value + " of type " + type);
+      if (self.deleted(value, type))
+        del = true;
     });
     return del;
   }
@@ -140,9 +141,9 @@ State.prototype.deleted = function (index, entity) {
   if (typeof entity !== 'undefined' && entity instanceof CArray) {
     var del = false;
     var entry = entity.get(index);
-    entry.forEachIndex(function (idx, value, type) {
-      var entity = self.get(type);
-      if (self.deleted(idx, entity))
+    entry.forEachKey(function (name, value) {
+      var type = entity.indexes.getTypeOf(name);
+      if (self.deleted(name, type))
         del = true;
     });
     return del;

@@ -1,38 +1,39 @@
-var Indexes = require('./Indexes');
+var Indexes     = require('./Indexes');
+var CArrayEntry = require('./CArrayEntry');
 
 module.exports = CEntityEntry;
 
-function CEntityEntry(cEntity, indexes) {
-  this.cEntity = cEntity;
-  this.indexes = Indexes.getIndexes(indexes, cEntity);
+function CEntityEntry(cArray, indexes) {
+  CArrayEntry.call(this, cArray, indexes);
+//  this.cArray = cArray;
+//  this.indexes = Indexes.getIndexes(indexes, cArray);
 }
-//CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
+
+CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
 
 
 CEntityEntry.prototype.get = function (property) {
-  return this.cEntity.getProperty(property).saveGet(this.indexes);
-};
-
-CEntityEntry.prototype.key = function (name) {
-  var position = this.cEntity.indexes.getPositionOf(name);
-  if (position === -1)
-    return null;
-  return this.indexes[position];
+  return this.cArray.getProperty(property).saveGet(this.indexes);
 };
 
 CEntityEntry.prototype.forEachIndex = function (callback) {
-  var self = this;
-  var i = 0;
-  Indexes.getIndexes(this.indexes).forEach(function (index) {
-    var type = self.cEntity.indexes.getType(i++);
-    callback(type, index);
-  });
+  return this.indexes.slice(1).forEach(callback);
+};
+
+CEntityEntry.prototype.forEachKey = function (callback) {
+  for (var i = 1; i<this.indexes.length; i++) {
+    callback(this.cArray.indexes.getName(i), this.indexes[i]);
+  }
 };
 
 CEntityEntry.prototype.deleted = function () {
-  return (this.cEntity.state.deleted(this.indexes, this.cEntity));
+  return (this.cArray.state.deleted(this.indexes, this.cArray));
 };
 
 CEntityEntry.prototype.delete = function () {
-  return this.cEntity.delete(this);
+  return this.cArray.delete(this);
+};
+
+CEntityEntry.prototype.toString = function () {
+  return Indexes.createIndex(this.indexes);
 };

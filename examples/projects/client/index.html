@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>CloudTypes: Grocery List Example</title>
+
+  <!-- Bootstrap core CSS -->
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
+
+  <!-- Custom styles for this template -->
+  <link href="projects.css" rel="stylesheet">
+  <link href="/example-assets/css/bootstrap-select.min.css" rel="stylesheet">
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+  <![endif]-->
+</head>
+
+<body>
+
+<div id="wrap">
+  <div class="container">
+    <div class="network-actions">
+      <button href="#" id='disconnect-btn' class="btn btn-default btn-sm pull-right">Offline</button>
+      <button href="#" id='connect-btn' class="btn btn-default btn-sm pull-right active">Online</button>
+    </div>
+    <div class="clearfix"></div>
+  <div class="text-center">
+
+    <h1>CloudTypes Example: Projects</h1>
+    <p class="lead">Project Manager to demonstrate Entities and weak Entities. <br>
+      Consists of Members, Projects and Tasks, where a Task can be given to a certain Member for a certain Project.<br>
+      All entities can be <strong>edited</strong> by <strong>clicking</strong> them! Track/Adjust connectivity using the online/offline buttons.</p>
+
+        <div class="center-block main">
+
+          <!-- Navigation Tabs -->
+          <div class="navbar">
+          <ul class="nav nav-tabs">
+            <li class="active"><a href="#members" data-toggle="tab">Members</a></li>
+            <li><a href="#projects" data-toggle="tab">Projects</a></li>
+          </ul>
+          </div>
+
+          <div class="row">
+
+            <!-- Tab Panes -->
+            <div class="tab-content">
+
+              <div class="tab-pane active" id="members">
+                <!-- Main Members -->
+                <div class="col-sm-9 main-members">
+                  <div class="row main-list-members">
+                    <div class="col-sm-1">
+                      <button id="maincreatemember" class="btn btn-primary">New Member</button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Side Projects -->
+                <div class="col-sm-3 side-projects">
+
+                <h3>Projects</h3>
+
+                <ul class='list-group side-list-projects'></ul>
+
+                <buttton id="sidecreateproject" class="btn btn-primary">Create Project</buttton>
+
+
+                </div>
+              </div>
+
+              <div class="tab-pane" id="projects">
+                <!-- Main Projects -->
+                <div class="col-lg-9 main-projects">
+                  <div class="row main-list-projects">
+                    <div class="col-md-1">
+                      <button id="maincreateproject" class="btn btn-primary">Create Project</button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Side Members -->
+                <div class="col-lg-3 side-members">
+
+              <h3>Members</h3>
+
+              <ul class='list-group side-list-members'></ul>
+
+              <buttton id="sidecreatemember" class="btn btn-primary">Create Member</buttton>
+
+
+            </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+    <!-- edit member form -->
+    <form role="form" class="hide form-inline" id="editmemberform">
+      <div class="form-group">
+        <input type="text" name='name' id="editmembername" class="form-control" value="" placeholder="Enter new name">
+      </div>
+      <div class="form-group">
+        <input type="submit" class="form-control btn btn-default" id="editmembersubmit" value="OK">
+      </div>
+      <div class="form-group link">
+        <input type="cancel" class=" btn btn-link" id="editmembercancel" value="Cancel">
+      </div>
+      <div class="form-group">
+        <a href="#"><span class="glyphicon glyphicon-trash pull-right" id="editmemberdelete"></span></a>
+      </div>
+
+    </form>
+
+    <!-- edit task form -->
+    <form role="form" class="hide form-inline" id="edittaskform">
+      <div class="form-group">
+        <input type="text" name='name' id="edittaskdescription" class="form-control" value="" placeholder="Enter new name">
+      </div>
+      <div class="form-group">
+        <input type="submit" class="form-control btn btn-default" id="edittasksubmit" value="OK">
+      </div>
+      <div class="form-group link">
+        <input type="cancel" class=" btn btn-link" id="edittaskcancel" value="Cancel">
+      </div>
+      <div class="form-group">
+        <a href="#"><span class="glyphicon glyphicon-trash" id="edittaskdelete"></span></a>
+      </div>
+    </form>
+
+    <!-- edit project form -->
+    <form role="form" class="hide form-inline" id="editprojectform">
+      <div class="form-group">
+        <input type="text" name='name' id="editprojectname" class="form-control" value="" placeholder="Enter new name">
+      </div>
+      <div class="form-group">
+        <input type="submit" class="form-control btn btn-default" id="editprojectsubmit" value="OK">
+      </div>
+
+      <div class="form-group link">
+        <input type="cancel" class=" btn btn-link" id="editprojectcancel" value="Cancel">
+      </div>
+      <div class="form-group">
+        <a href="#"><span class="glyphicon glyphicon-trash" id="editprojectdelete"></span></a>
+      </div>
+    </form>
+
+  </div>
+
+</div>
+
+</div>
+
+<div id="footer">
+  <div class="container">
+    <p class="text-muted credit">Example Courtesy by <a href="http://www.github.com/ticup">Tim Coppieters</a> for <a href="http://github.com/ticup/CloudType.js">CloudType.js</a></p>
+  </div>
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.1/js/bootstrap.min.js"></script>
+<script src="../../../client/bundle.js"></script>
+<script src="/example-assets/js/bootstrap-select.min.js"></script>
+<script src="/example-assets/js/tab.js"></script>
+
+<script src="SelectView.js"></script>
+<script src="TaskView.js"></script>
+
+<script src="MemberSelectView.js"></script>
+<script src="MemberTaskView.js"></script>
+<script src="MemberTasksView.js"></script>
+<script src="MemberView.js"></script>
+<script src="MembersView.js"></script>
+
+<script src="ProjectSelectView.js"></script>
+<script src="ProjectTaskView.js"></script>
+<script src="ProjectTasksView.js"></script>
+<script src="ProjectView.js"></script>
+<script src="ProjectsView.js"></script>
+
+<script src="SideMembersView.js"></script>
+<script src="SideProjectsView.js"></script>
+
+<script src="projects.js"></script>
+</body>
+</html>

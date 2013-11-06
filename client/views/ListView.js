@@ -30,11 +30,11 @@ var ListView = View.extend({
 
         // view not present: create, update and insert html in DOM
       } else {
-        view = self.createItemView(item);
+        view = self.createItemView(item, ctr);
         view.update();
         insertAt(self.html, ctr, view.html);
       }
-
+      view.position = ctr++;
       newViews[id] = view;
     });
 
@@ -48,8 +48,25 @@ var ListView = View.extend({
     this.views = newViews;
   },
 
+  getView: function (position) {
+    var result;
+    this.forEachView(function (view) {
+      if (view.position === position) {
+        result = view;
+      }
+    });
+    return result;
+  },
+
   createItemView: function (item) {
     throw Error("ListView.createItemView(item): should be implemented by extending object");
+  },
+
+  forEachView: function (callback) {
+    var views = this.views;
+    Object.keys(views).forEach(function (index) {
+      callback(views[index]);
+    });
   }
 });
 
@@ -58,10 +75,10 @@ var ListView = View.extend({
 
 function insertAt(parent, index, html) {
   console.log('inserting at ' + index + ' ' + html);
-  console.log(html);
+  console.log(parent);
   if (index === 0)
     return parent.prepend(html);
-  parent.find(':nth-child(' + index + ')').after(html);
+  parent.children(':nth-child(' + index + ')').after(html);
 }
 
 module.exports = ListView;

@@ -9,6 +9,7 @@ var CEntity         = require('../shared/CEntity');
 var View            = require('./views/View');
 var ListView        = require('./views/ListView');
 var EntryView       = require('./views/EntryView');
+var EditableListView = require('./views/EditableListView');
 
 var CloudTypes = {
   // Client
@@ -19,7 +20,8 @@ var CloudTypes = {
   // Views
   View: View,
   ListView: ListView,
-  EntryView: EntryView
+  EntryView: EntryView,
+  EditableListView: EditableListView
 
 };
 

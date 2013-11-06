@@ -20,7 +20,6 @@ CEntity.prototype = Object.create(CArray.prototype);
 
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
-  console.log('declaring entity');
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];
@@ -34,8 +33,15 @@ CEntity.prototype.create = function (indexes) {
   indexes = (typeof indexes === 'undefined') ? [] : indexes;
   var uid = this.name + ":" + this.state.createUID(this.uid);
   this.uid += 1;
-  this.setCreated(uid);
+  var index = Indexes.createIndex([uid].concat(indexes));
+  this.setCreated(index);
   return this.get([uid].concat(indexes));
+};
+
+CEntity.prototype.delete = function (entry) {
+  console.log("DELETING " + entry.indexes);
+  this.setDeleted(Indexes.createIndex(entry.indexes));
+  this.state.propagate();
 };
 
 CEntity.prototype.get = function (indexes) {
@@ -95,11 +101,7 @@ CEntity.prototype.setCreated = function (index) {
   this.states[index] = OK;
 };
 
-CEntity.prototype.delete = function (entry) {
-  console.log("DELETING " + entry.indexes);
-  this.setDeleted(entry.indexes[0]);
-  this.state.propagate();
-};
+
 
 CEntity.prototype.exists = function (idx) {
   return (typeof this.states[idx] !== 'undefined' && this.states[idx] === OK);

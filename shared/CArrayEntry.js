@@ -51,3 +51,14 @@ CArrayEntry.prototype.deleted = function () {
 CArrayEntry.prototype.index = function () {
   return Indexes.createIndex(this.indexes);
 };
+
+CArrayEntry.prototype.equals = function (entry) {
+  if (this.cArray !== entry.cArray)
+    return false;
+
+  for (var i = 0; i<this.indexes.length; i++) {
+    if (this.indexes[i] !== entry.indexes[i])
+      return false;
+  }
+  return true;
+};

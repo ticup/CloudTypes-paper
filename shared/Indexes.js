@@ -14,6 +14,7 @@ function Indexes(indexes) {
 
 Indexes.prototype.forEach = function (callback) {
   for (var i = 0; i<this.names.length; i++) {
+    console.log('type: ' + this.types[i]);
     callback(this.names[i], this.types[i]);
   }
 };
@@ -43,23 +44,27 @@ Indexes.prototype.get = function (indexes) {
 Indexes.createIndex = function createIndex(indexes) {
   if (typeof indexes === 'string')
     return indexes;
-  return indexes.join(".");
+  return indexes.map(function (val) { return val.toString(); }).join(".");
 };
 
 Indexes.getIndexes = function getIndexes(index, cArray) {
-  if (typeof index === 'string') {
-    var index = index.split(".");
-    for (var i = 0; i<index.length; i++) {
-      var type = cArray.indexes.getType(i);
-      if (type === 'string') {
-        break;
-      }
-      if (type === 'int') {
-        index[i] = parseInt(index[i], 10);
-        break;
-      }
-      index[i] = cArray.state.get(type).get(index[i]);
+  if (typeof index === 'string')
+    index = index.split(".");
+
+  for (var i = 0; i<index.length; i++) {
+    var type = cArray.indexes.getType(i);
+    if (type === 'string') {
+      continue;
     }
+    if (type === 'int') {
+      index[i] = parseInt(index[i], 10);
+      continue;
+    }
+
+    // If entry is given, just store index!
+    if (typeof index[i] !== 'string')
+      index[i] = index[i].index();
+
   }
   return index;
 };

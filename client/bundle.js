@@ -74,7 +74,7 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":18}],2:[function(require,module,exports){
+},{"../shared/State":19}],2:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
 var io          = require('socket.io-client');
 
@@ -154,7 +154,7 @@ Client.prototype.flushPush = function (pushState, flushPull) {
     flushPull(pullState);
   });
 };
-},{"../shared/State":18,"socket.io-client":7}],3:[function(require,module,exports){
+},{"../shared/State":19,"socket.io-client":8}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
 var ClientState     = require('./ClientState');
 
@@ -166,6 +166,7 @@ var CEntity         = require('../shared/CEntity');
 var View            = require('./views/View');
 var ListView        = require('./views/ListView');
 var EntryView       = require('./views/EntryView');
+var EditableListView = require('./views/EditableListView');
 
 var CloudTypes = {
   // Client
@@ -176,13 +177,36 @@ var CloudTypes = {
   // Views
   View: View,
   ListView: ListView,
-  EntryView: EntryView
+  EntryView: EntryView,
+  EditableListView: EditableListView
 
 };
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":8,"../shared/CEntity":10,"../shared/CInt":12,"../shared/CString":13,"./ClientState":1,"./CloudTypeClient":2,"./views/EntryView":4,"./views/ListView":5,"./views/View":6}],4:[function(require,module,exports){
+},{"../shared/CArray":9,"../shared/CEntity":11,"../shared/CInt":13,"../shared/CString":14,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
+/**
+ * Created by ticup on 06/11/13.
+ */
+var ListView = require('./ListView');
+
+var EditableListView = ListView.extend({
+  edit: function (entry) {
+    this.forEachView(function (view) {
+      if (view.entry.equals(entry)) {
+        view.edit();
+      }
+    });
+  },
+  finishEdit: function () {
+    this.forEachView(function (view) {
+      view.finishEdit();
+    });
+  }
+});
+
+module.exports = EditableListView;
+},{"./ListView":6}],5:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -192,8 +216,8 @@ var View = require('./View');
 /////////////
 var EntryView = View.extend({
   initialize: function () {
-    EntryView.__super__.initialize.call(this);
     defaults(this);
+    EntryView.__super__.initialize.call(this);
     var html = this.html;
     this.entry.forEachKey(function (name, value) {
       html.find('.key-'+name).html(value);
@@ -224,7 +248,7 @@ function defaults(entryView) {
 }
 
 module.exports = EntryView;
-},{"./View":6}],5:[function(require,module,exports){
+},{"./View":7}],6:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -257,11 +281,11 @@ var ListView = View.extend({
 
         // view not present: create, update and insert html in DOM
       } else {
-        view = self.createItemView(item);
+        view = self.createItemView(item, ctr);
         view.update();
         insertAt(self.html, ctr, view.html);
       }
-
+      view.position = ctr++;
       newViews[id] = view;
     });
 
@@ -275,8 +299,25 @@ var ListView = View.extend({
     this.views = newViews;
   },
 
+  getView: function (position) {
+    var result;
+    this.forEachView(function (view) {
+      if (view.position === position) {
+        result = view;
+      }
+    });
+    return result;
+  },
+
   createItemView: function (item) {
     throw Error("ListView.createItemView(item): should be implemented by extending object");
+  },
+
+  forEachView: function (callback) {
+    var views = this.views;
+    Object.keys(views).forEach(function (index) {
+      callback(views[index]);
+    });
   }
 });
 
@@ -285,14 +326,14 @@ var ListView = View.extend({
 
 function insertAt(parent, index, html) {
   console.log('inserting at ' + index + ' ' + html);
-  console.log(html);
+  console.log(parent);
   if (index === 0)
     return parent.prepend(html);
-  parent.find(':nth-child(' + index + ')').after(html);
+  parent.children(':nth-child(' + index + ')').after(html);
 }
 
 module.exports = ListView;
-},{"./View":6}],6:[function(require,module,exports){
+},{"./View":7}],7:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -357,7 +398,7 @@ View.prototype.initialize = function () {
 };
 
 module.exports = View;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -4231,7 +4272,7 @@ if (typeof define === "function" && define.amd) {
   define([], function () { return io; });
 }
 })();
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var CloudType   = require('./CloudType');
 var Indexes     = require('./Indexes');
 var Property    = require('./Property');
@@ -4274,7 +4315,11 @@ CArray.prototype.entries = function (propertyName) {
 };
 
 CArray.prototype.getProperty = function (property) {
-  return this.properties.get(property);
+  var result = this.properties.get(property);
+  if (typeof result === 'undefined') {
+    throw Error(this.name + " does not have property " + property);
+  }
+  return result;
 };
 
 CArray.prototype.addProperty = function (property) {
@@ -4306,7 +4351,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":9,"./CloudType":14,"./Indexes":15,"./Properties":16,"./Property":17,"util":20}],9:[function(require,module,exports){
+},{"./CArrayEntry":10,"./CloudType":15,"./Indexes":16,"./Properties":17,"./Property":18,"util":21}],10:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -4360,7 +4405,18 @@ CArrayEntry.prototype.deleted = function () {
 CArrayEntry.prototype.index = function () {
   return Indexes.createIndex(this.indexes);
 };
-},{"./Indexes":15}],10:[function(require,module,exports){
+
+CArrayEntry.prototype.equals = function (entry) {
+  if (this.cArray !== entry.cArray)
+    return false;
+
+  for (var i = 0; i<this.indexes.length; i++) {
+    if (this.indexes[i] !== entry.indexes[i])
+      return false;
+  }
+  return true;
+};
+},{"./Indexes":16}],11:[function(require,module,exports){
 var CArray     = require('./CArray');
 var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
@@ -4383,7 +4439,6 @@ CEntity.prototype = Object.create(CArray.prototype);
 
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
-  console.log('declaring entity');
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
   Object.keys(propertyDeclarations).forEach(function (propName) {
     var cTypeName = propertyDeclarations[propName];
@@ -4397,8 +4452,15 @@ CEntity.prototype.create = function (indexes) {
   indexes = (typeof indexes === 'undefined') ? [] : indexes;
   var uid = this.name + ":" + this.state.createUID(this.uid);
   this.uid += 1;
-  this.setCreated(uid);
+  var index = Indexes.createIndex([uid].concat(indexes));
+  this.setCreated(index);
   return this.get([uid].concat(indexes));
+};
+
+CEntity.prototype.delete = function (entry) {
+  console.log("DELETING " + entry.indexes);
+  this.setDeleted(Indexes.createIndex(entry.indexes));
+  this.state.propagate();
 };
 
 CEntity.prototype.get = function (indexes) {
@@ -4458,11 +4520,7 @@ CEntity.prototype.setCreated = function (index) {
   this.states[index] = OK;
 };
 
-CEntity.prototype.delete = function (entry) {
-  console.log("DELETING " + entry.indexes);
-  this.setDeleted(entry.indexes[0]);
-  this.state.propagate();
-};
+
 
 CEntity.prototype.exists = function (idx) {
   return (typeof this.states[idx] !== 'undefined' && this.states[idx] === OK);
@@ -4501,46 +4559,47 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":8,"./CEntityEntry":11,"./Indexes":15,"./Properties":16,"./Property":17}],11:[function(require,module,exports){
-var Indexes = require('./Indexes');
+},{"./CArray":9,"./CEntityEntry":12,"./Indexes":16,"./Properties":17,"./Property":18}],12:[function(require,module,exports){
+var Indexes     = require('./Indexes');
+var CArrayEntry = require('./CArrayEntry');
 
 module.exports = CEntityEntry;
 
-function CEntityEntry(cEntity, indexes) {
-  this.cEntity = cEntity;
-  this.indexes = Indexes.getIndexes(indexes, cEntity);
+function CEntityEntry(cArray, indexes) {
+  CArrayEntry.call(this, cArray, indexes);
+//  this.cArray = cArray;
+//  this.indexes = Indexes.getIndexes(indexes, cArray);
 }
-//CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
+
+CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
 
 
 CEntityEntry.prototype.get = function (property) {
-  return this.cEntity.getProperty(property).saveGet(this.indexes);
-};
-
-CEntityEntry.prototype.key = function (name) {
-  var position = this.cEntity.indexes.getPositionOf(name);
-  if (position === -1)
-    return null;
-  return this.indexes[position];
+  return this.cArray.getProperty(property).saveGet(this.indexes);
 };
 
 CEntityEntry.prototype.forEachIndex = function (callback) {
-  var self = this;
-  var i = 0;
-  Indexes.getIndexes(this.indexes).forEach(function (index) {
-    var type = self.cEntity.indexes.getType(i++);
-    callback(type, index);
-  });
+  return this.indexes.slice(1).forEach(callback);
+};
+
+CEntityEntry.prototype.forEachKey = function (callback) {
+  for (var i = 1; i<this.indexes.length; i++) {
+    callback(this.cArray.indexes.getName(i), this.indexes[i]);
+  }
 };
 
 CEntityEntry.prototype.deleted = function () {
-  return (this.cEntity.state.deleted(this.indexes, this.cEntity));
+  return (this.cArray.state.deleted(this.indexes, this.cArray));
 };
 
 CEntityEntry.prototype.delete = function () {
-  return this.cEntity.delete(this);
+  return this.cArray.delete(this);
 };
-},{"./Indexes":15}],12:[function(require,module,exports){
+
+CEntityEntry.prototype.toString = function () {
+  return Indexes.createIndex(this.indexes);
+};
+},{"./CArrayEntry":10,"./Indexes":16}],13:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CInt;
@@ -4626,7 +4685,7 @@ CInt.prototype.replaceBy = function (cint) {
 CInt.prototype.isDefault = function () {
   return (this.get() === 0);
 };
-},{"./CloudType":14,"util":20}],13:[function(require,module,exports){
+},{"./CloudType":15,"util":21}],14:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CString;
@@ -4738,7 +4797,7 @@ CString.prototype.replaceBy = function (cstring) {
 CString.prototype.isDefault = function () {
   return (this.get() === '');
 };
-},{"./CloudType":14,"util":20}],14:[function(require,module,exports){
+},{"./CloudType":15,"util":21}],15:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -4771,7 +4830,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -4788,6 +4847,7 @@ function Indexes(indexes) {
 
 Indexes.prototype.forEach = function (callback) {
   for (var i = 0; i<this.names.length; i++) {
+    console.log('type: ' + this.types[i]);
     callback(this.names[i], this.types[i]);
   }
 };
@@ -4817,23 +4877,27 @@ Indexes.prototype.get = function (indexes) {
 Indexes.createIndex = function createIndex(indexes) {
   if (typeof indexes === 'string')
     return indexes;
-  return indexes.join(".");
+  return indexes.map(function (val) { return val.toString(); }).join(".");
 };
 
 Indexes.getIndexes = function getIndexes(index, cArray) {
-  if (typeof index === 'string') {
-    var index = index.split(".");
-    for (var i = 0; i<index.length; i++) {
-      var type = cArray.indexes.getType(i);
-      if (type === 'string') {
-        break;
-      }
-      if (type === 'int') {
-        index[i] = parseInt(index[i], 10);
-        break;
-      }
-      index[i] = cArray.state.get(type).get(index[i]);
+  if (typeof index === 'string')
+    index = index.split(".");
+
+  for (var i = 0; i<index.length; i++) {
+    var type = cArray.indexes.getType(i);
+    if (type === 'string') {
+      continue;
     }
+    if (type === 'int') {
+      index[i] = parseInt(index[i], 10);
+      continue;
+    }
+
+    // If entry is given, just store index!
+    if (typeof index[i] !== 'string')
+      index[i] = index[i].index();
+
   }
   return index;
 };
@@ -4861,7 +4925,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -4909,7 +4973,7 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":17}],17:[function(require,module,exports){
+},{"./Property":18}],18:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 function Property(name, ctypeName, cArray, values) {
@@ -4986,7 +5050,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":14}],18:[function(require,module,exports){
+},{"./CloudType":15}],19:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5030,7 +5094,6 @@ State.prototype.declare = function (name, array) {
     return this.arrays[name] = array;
   }
   // Either declare CArray (CEntity is also a CArray) or CloudType, nothing else.
-  console.log(require('util').inspect(array));
   throw "Need a CArray or CloudType to declare: " + array;
 };
 
@@ -5098,14 +5161,12 @@ State.prototype.propagate = function () {
   var self = this;
   var changed = false;
   this.forEachEntity(function (entity) {
-    entity.forEachProperty(function (property) {
-      property.forEachIndex(function (index) {
-        if (entity.exists(index) && self.deleted(index, entity)) {
-          entity.setDeleted(index);
-        }
-      })
-    })
-  })
+    entity.forEachState(function (index) {
+      if (entity.exists(index) && self.deleted(index, entity)) {
+        entity.setDeleted(index);
+      }
+    });
+  });
 };
 
 State.prototype.deleted = function (index, entity) {
@@ -5113,14 +5174,18 @@ State.prototype.deleted = function (index, entity) {
   // Entity
   if (typeof entity !== 'undefined' && entity instanceof CEntity) {
     var entry = entity.get(index);
+//    console.log(index + ' of ' + entity.name + ' deleted ?');
+
     if (entity.deleted(index))
       return true;
     var del = false;
-    entry.forEachIndex(function (index) {
-      if (typeof index !== 'int' && typeof index !== 'string') {
-        if (index.deleted())
-          del = true;
-      }
+    entry.forEachKey(function (name, value) {
+      var type = entity.indexes.getTypeOf(name);
+      if (typeof type !== 'undefined')
+        type = self.get(type);
+//      console.log('index deleted? ' + value + " of type " + type);
+      if (self.deleted(value, type))
+        del = true;
     });
     return del;
   }
@@ -5129,9 +5194,9 @@ State.prototype.deleted = function (index, entity) {
   if (typeof entity !== 'undefined' && entity instanceof CArray) {
     var del = false;
     var entry = entity.get(index);
-    entry.forEachIndex(function (idx, value, type) {
-      var entity = self.get(type);
-      if (self.deleted(idx, entity))
+    entry.forEachKey(function (name, value) {
+      var type = entity.indexes.getTypeOf(name);
+      if (self.deleted(name, type))
         del = true;
     });
     return del;
@@ -5214,7 +5279,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":8,"./CEntity":10,"./CloudType":14,"util":20}],19:[function(require,module,exports){
+},{"./CArray":9,"./CEntity":11,"./CloudType":15,"util":21}],20:[function(require,module,exports){
 
 
 //
@@ -5432,7 +5497,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5977,5 +6042,5 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":19}]},{},[3])
+},{"_shims":20}]},{},[3])
 ;

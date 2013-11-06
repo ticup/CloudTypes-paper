@@ -1,1 +1,1 @@
-web: node examples/grocery/server/index.js
+web: node deploy/index.js

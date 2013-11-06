@@ -16,21 +16,40 @@ body {
     background-color: #f5f5f5;
 }
 
-
-.grocerylist { margin-top: 50px }
-#boughtgroceryform { margin-top: 10px; }
 #footer { height: 60px }
 .network-actions {margin-top: 5px;}
 
 .container {
     width: auto;
-    max-width: 620px;
-    padding: 0 15px;
+    padding: 0px 15px;
+}
+.main {
+    padding: 15px;
 }
 .container .credit {
     margin: 20px 0;
 }
+.member-item,
+.project-item {
+    padding: 5px;
+}
 
+
+/* custom
+-----------*/
+#editmembercancel { padding: 0; width: 65px; }
+.member,
+.project { margin-bottom: 20px; }
+.member > .panel,
+.project > .panel { margin-bottom: 5px; }
+.member-header,
+.project-header { font-size: 18px; font-weight: 500 }
+
+
+.member-header:hover,
+.project-header:hover,
+.side-member-item:hover,
+.side-project-item:hover { cursor:pointer }
 
 /* Custom page CSS
 -------------------------------------------------- */

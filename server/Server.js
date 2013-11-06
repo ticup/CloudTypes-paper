@@ -18,7 +18,8 @@ Server.prototype.open = function (target, staticPath) {
   // setup static file serving
   if (typeof staticPath === 'string') {
     var file = new (require('node-static').Server)(staticPath);
-    console.log('starting static file server from ' + staticPath);
+    console.log('#### Static File Server Added To : ' + target + ' #### ')
+    console.log("-> from path: " + staticPath);
     target = require('http').createServer(function (req, res) {
       req.addListener('end', function () {
         file.serve(req, res);
@@ -29,7 +30,7 @@ Server.prototype.open = function (target, staticPath) {
   // open websockets
   var io = IO.listen(target);
   this.io = io;
-
+  io.set('log level', 1);
   // set up listeners
   io.sockets.on('connection', function (socket) {
     socket.get('cid', function (clientId) {

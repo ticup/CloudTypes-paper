@@ -5,6 +5,8 @@ CloudTypes is a JavaScript library implementation of the CloudTypes model demons
 
 [![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes)
 
+Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
+
 The Model
 ----------
 
@@ -326,7 +328,7 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
 
 Examples
 --------
-The Grocery list example is currently live on heroku and can be found [here](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html).
+There are currently two examples implemented and running live on heroku: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html).
 See the examples folder (e.g. [the grocery example](https://github.com/ticup/CloudTypes/blob/master/examples/grocery/server/index.js)) on how to get everything working.
 
 You can run the examples on your own computer if you have the optional dependencies installed (static file server):
@@ -334,19 +336,19 @@ You can run the examples on your own computer if you have the optional dependenc
 
     npm install --optional
 
-Then start the example be either running:
-
-    node node_modules/cloudtypes/examples/grocery/server/index.js
-
-If you have it installed as a library or:
+Then start a single example by running e.g.:
 
     node examples/grocery/server/index.js
 
-If you have cloned to repository.
+You can also run all examples at once by running (this is the file that is used to run the examples on Heroku):
 
-Visit the example as follows:
+    node deploy/index.js
+    
+    
+Visit the examples:
 
     http://localhost:8080/examples/grocery/client/index.html
+    http://localhost:8080/examples/projects/client/index.html
 
 
 Library Goal

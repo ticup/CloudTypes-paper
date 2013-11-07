@@ -3,7 +3,7 @@ var Indexes       = require('./Indexes');
 var Property      = require('./Property');
 var Properties    = require('./Properties');
 var CArrayEntry   = require('./CArrayEntry');
-var CArrayOrdered = require('./CArrayOrdered');
+var CArrayQuery   = require('./CArrayQuery');
 
 var util          = require('util');
 
@@ -41,8 +41,8 @@ CArray.prototype.entries = function (propertyName) {
   return this.properties.get(propertyName).entries();
 };
 
-CArray.prototype.orderBy = function (property, property, dir) {
-  return CArrayOrdered(this, property, dir);
+CArray.prototype.where = function (filter) {
+  return new CArrayQuery(this, filter);
 };
 
 CArray.prototype.getProperty = function (property) {

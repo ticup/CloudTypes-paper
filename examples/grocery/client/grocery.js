@@ -98,7 +98,10 @@ var TotalItemsView = CloudTypes.View.extend({
 ///////////////
 var GroceryView = CloudTypes.ListView.extend({
   value: function () {
-    return this.app.Grocery.entries('toBuy');
+    return this.app.Grocery
+        .where()
+        .orderBy('toBuy', 'desc')
+        .entries('toBuy');
   },
 
   createItemView: function (item) {

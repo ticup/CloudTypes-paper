@@ -3,6 +3,7 @@ var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
 var Property   = require('./Property');
 var CEntityEntry = require('./CEntityEntry');
+var CEntityQuery = require('./CEntityQuery');
 
 module.exports = CEntity;
 
@@ -18,6 +19,8 @@ function CEntity(indexes, properties, states) {
 }
 CEntity.prototype = Object.create(CArray.prototype);
 
+CEntity.OK = OK;
+CEntity.DELETED = DELETED;
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
@@ -65,47 +68,8 @@ CEntity.prototype.setMax = function (entity1, entity2, index) {
 };
 
 CEntity.prototype.where = function (filter) {
-  var self = this;
-  var sumFilter = filter;
-  var orderProperty = false;
-  var orderDir = false;
-  return {
-    all: function () {
-      var entities = [];
-      Object.keys(self.states).forEach(function (index) {
-        if (self.states[index] === OK && sumFilter(self.get(index)))
-          entities.push(self.get(index));
-      });
-      if (orderProperty) {
-        var property = self.get(orderProperty);
-        if (typeof property === 'undefined') {
-          throw new Error("orderBy only allowed on properties for the moment");
-        }
-        return entities.sort(function (entry1, entry2) {
-          return entry1.get(orderProperty).compare(entry2.get(orderProperty), (orderDir === "desc"));
-        });
-      }
-      return entities;
-    },
-    orderBy: function (propertyName, dir) {
-      orderProperty = propertyName;
-      orderDir = dir;
-      return this;
-    },
-    where: function (newFilter) {
-      sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
-      return this;
-    }
-  }
+  return new CEntityQuery(this, filter);
 };
-
-CEntity.prototype.orderBy = function (propertyName, dir) {
-  return {
-    all: function () {
-
-    }
-  };
-}
 
 CEntity.prototype.all = function () {
   var self = this;

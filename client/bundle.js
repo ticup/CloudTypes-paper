@@ -74,7 +74,7 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":20}],2:[function(require,module,exports){
+},{"../shared/State":21}],2:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
 var io          = require('socket.io-client');
 
@@ -154,7 +154,7 @@ Client.prototype.flushPush = function (pushState, flushPull) {
     flushPull(pullState);
   });
 };
-},{"../shared/State":20,"socket.io-client":8}],3:[function(require,module,exports){
+},{"../shared/State":21,"socket.io-client":8}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
 var ClientState     = require('./ClientState');
 
@@ -184,7 +184,7 @@ var CloudTypes = {
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":9,"../shared/CEntity":12,"../shared/CInt":14,"../shared/CString":15,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
+},{"../shared/CArray":9,"../shared/CEntity":12,"../shared/CInt":15,"../shared/CString":16,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
 /**
  * Created by ticup on 06/11/13.
  */
@@ -278,7 +278,7 @@ var ListView = View.extend({
       if (typeof view !== 'undefined') {
         view.update();
         delete views[id];
-        
+
         // reposition
         if (view.position !== ctr) {
           insertAt(self.html, ctr, view.html);
@@ -4283,7 +4283,7 @@ var Indexes       = require('./Indexes');
 var Property      = require('./Property');
 var Properties    = require('./Properties');
 var CArrayEntry   = require('./CArrayEntry');
-var CArrayOrdered = require('./CArrayOrdered');
+var CArrayQuery   = require('./CArrayQuery');
 
 var util          = require('util');
 
@@ -4321,8 +4321,8 @@ CArray.prototype.entries = function (propertyName) {
   return this.properties.get(propertyName).entries();
 };
 
-CArray.prototype.orderBy = function (property, property, dir) {
-  return CArrayOrdered(this, property, dir);
+CArray.prototype.where = function (filter) {
+  return new CArrayQuery(this, filter);
 };
 
 CArray.prototype.getProperty = function (property) {
@@ -4362,7 +4362,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":10,"./CArrayOrdered":11,"./CloudType":16,"./Indexes":17,"./Properties":18,"./Property":19,"util":22}],10:[function(require,module,exports){
+},{"./CArrayEntry":10,"./CArrayQuery":11,"./CloudType":17,"./Indexes":18,"./Properties":19,"./Property":20,"util":23}],10:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -4427,24 +4427,78 @@ CArrayEntry.prototype.equals = function (entry) {
   }
   return true;
 };
-},{"./Indexes":17}],11:[function(require,module,exports){
+},{"./Indexes":18}],11:[function(require,module,exports){
 /**
  * Created by ticup on 06/11/13.
  */
 
-function CArrayOrdered(cArray, property, dir) {
-  this.cArray   = cArray;
-  this.property = property;
-  this.dir      = dir || "asc";
+/**
+ * Created by ticup on 07/11/13.
+ */
+module.exports = CArrayQuery;
+
+function CArrayQuery(cArray, filter) {
+  this.cArray = cArray;
+  this.sumFilter = filter;
+  this.orderProperty = false;
+  this.orderDir = false;
 }
 
-
-CArrayOrdered.prototype.entries = function (propertyName) {
+CArrayQuery.prototype.all = function () {
   var self = this;
-  var array = this.cArray.entries(propertyName);
-  return array.sort(function (entry1, entry2) {
-    return entry1.get(self.property).compare(entry2.get(self.property), (dir === "desc"));
+  var entities = [];
+  Object.keys(self.cArray.states).forEach(function (index) {
+    if (self.cArray.exists(index) && (typeof self.sumFilter === 'undefined' || self.sumFilter(self.cArray.get(index))))
+      entities.push(self.cArray.get(index));
   });
+  if (self.orderProperty) {
+    var property = self.cArray.get(self.orderProperty);
+    if (typeof property === 'undefined') {
+      throw new Error("orderBy only allowed on properties for the moment");
+    }
+    return entities.sort(function (entry1, entry2) {
+      return entry1.get(self.orderProperty).compare(entry2.get(self.orderProperty), (self.orderDir === "desc"));
+    });
+  }
+  return entities;
+};
+
+CArrayQuery.prototype.entries = function (propertyName) {
+  var self = this;
+  var filtered = [];
+  var array = this.cArray.entries(propertyName);
+  if (typeof self.sumFilter === 'undefined') {
+    filtered = array;
+  } else {
+    array.forEach(function (entry) {
+      if (self.sumFilter(entry))
+        filtered.push(entry);
+    });
+  }
+
+  if (self.orderProperty) {
+    var property = self.cArray.get(self.orderProperty);
+    if (typeof property === 'undefined') {
+      throw new Error("orderBy only allowed on properties for the moment");
+    }
+    return filtered.sort(function (entry1, entry2) {
+      return entry1.get(self.orderProperty).compare(entry2.get(self.orderProperty), (self.orderDir === "desc"));
+    });
+  }
+  return filtered;
+};
+
+
+CArrayQuery.prototype.orderBy = function (propertyName, dir) {
+  this.orderProperty = propertyName;
+  this.orderDir = dir;
+  return this;
+};
+
+CArrayQuery.prototype.where = function (newFilter) {
+  var sumFilter = this.sumFilter;
+  this.sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
+  return this;
 };
 },{}],12:[function(require,module,exports){
 var CArray     = require('./CArray');
@@ -4452,6 +4506,7 @@ var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
 var Property   = require('./Property');
 var CEntityEntry = require('./CEntityEntry');
+var CEntityQuery = require('./CEntityQuery');
 
 module.exports = CEntity;
 
@@ -4467,6 +4522,8 @@ function CEntity(indexes, properties, states) {
 }
 CEntity.prototype = Object.create(CArray.prototype);
 
+CEntity.OK = OK;
+CEntity.DELETED = DELETED;
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
@@ -4514,47 +4571,8 @@ CEntity.prototype.setMax = function (entity1, entity2, index) {
 };
 
 CEntity.prototype.where = function (filter) {
-  var self = this;
-  var sumFilter = filter;
-  var orderProperty = false;
-  var orderDir = false;
-  return {
-    all: function () {
-      var entities = [];
-      Object.keys(self.states).forEach(function (index) {
-        if (self.states[index] === OK && sumFilter(self.get(index)))
-          entities.push(self.get(index));
-      });
-      if (orderProperty) {
-        var property = self.get(orderProperty);
-        if (typeof property === 'undefined') {
-          throw new Error("orderBy only allowed on properties for the moment");
-        }
-        return entities.sort(function (entry1, entry2) {
-          return entry1.get(orderProperty).compare(entry2.get(orderProperty), (orderDir === "desc"));
-        });
-      }
-      return entities;
-    },
-    orderBy: function (propertyName, dir) {
-      orderProperty = propertyName;
-      orderDir = dir;
-      return this;
-    },
-    where: function (newFilter) {
-      sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
-      return this;
-    }
-  }
+  return new CEntityQuery(this, filter);
 };
-
-CEntity.prototype.orderBy = function (propertyName, dir) {
-  return {
-    all: function () {
-
-    }
-  };
-}
 
 CEntity.prototype.all = function () {
   var self = this;
@@ -4613,7 +4631,7 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":9,"./CEntityEntry":13,"./Indexes":17,"./Properties":18,"./Property":19}],13:[function(require,module,exports){
+},{"./CArray":9,"./CEntityEntry":13,"./CEntityQuery":14,"./Indexes":18,"./Properties":19,"./Property":20}],13:[function(require,module,exports){
 var Indexes     = require('./Indexes');
 var CArrayEntry = require('./CArrayEntry');
 
@@ -4653,7 +4671,39 @@ CEntityEntry.prototype.delete = function () {
 CEntityEntry.prototype.toString = function () {
   return Indexes.createIndex(this.indexes);
 };
-},{"./CArrayEntry":10,"./Indexes":17}],14:[function(require,module,exports){
+},{"./CArrayEntry":10,"./Indexes":18}],14:[function(require,module,exports){
+/**
+ * Created by ticup on 07/11/13.
+ */
+
+var CArrayQuery = require("./CArrayQuery");
+
+module.exports = CEntityQuery;
+
+function CEntityQuery(cEntity, filter) {
+  CArrayQuery.call(this, cEntity, filter);
+}
+CEntityQuery.prototype = Object.create(CArrayQuery.prototype);
+
+CEntityQuery.prototype.all = function () {
+  var self = this;
+  var entities = [];
+  Object.keys(self.cArray.states).forEach(function (index) {
+    if (self.cArray.exists(index) && (typeof self.sumFilter === 'undefined' || self.sumFilter(self.cArray.get(index))))
+      entities.push(self.cArray.get(index));
+  });
+  if (self.orderProperty) {
+    var property = self.cArray.get(self.orderProperty);
+    if (typeof property === 'undefined') {
+      throw new Error("orderBy only allowed on properties for the moment");
+    }
+    return entities.sort(function (entry1, entry2) {
+      return entry1.get(self.orderProperty).compare(entry2.get(self.orderProperty), (self.orderDir === "desc"));
+    });
+  }
+  return entities;
+};
+},{"./CArrayQuery":11}],15:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CInt;
@@ -4743,7 +4793,7 @@ CInt.prototype.isDefault = function () {
 CInt.prototype.compare = function (cint, reverse) {
   return ((reverse ? -1 : 1) * (this.get() - cint.get()));
 };
-},{"./CloudType":16,"util":22}],15:[function(require,module,exports){
+},{"./CloudType":17,"util":23}],16:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CString;
@@ -4859,7 +4909,7 @@ CString.prototype.isDefault = function () {
 CString.prototype.compare = function (cstring, reverse) {
   return ((reverse ? -1 : 1) * (this.get().localeCompare(cstring.get())));
 };
-},{"./CloudType":16,"util":22}],16:[function(require,module,exports){
+},{"./CloudType":17,"util":23}],17:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -4892,7 +4942,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -4987,7 +5037,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -5035,7 +5085,7 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":19}],19:[function(require,module,exports){
+},{"./Property":20}],20:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 function Property(name, ctypeName, cArray, values) {
@@ -5112,7 +5162,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":16}],20:[function(require,module,exports){
+},{"./CloudType":17}],21:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5341,7 +5391,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":9,"./CEntity":12,"./CloudType":16,"util":22}],21:[function(require,module,exports){
+},{"./CArray":9,"./CEntity":12,"./CloudType":17,"util":23}],22:[function(require,module,exports){
 
 
 //
@@ -5559,7 +5609,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6104,5 +6154,5 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":21}]},{},[3])
+},{"_shims":22}]},{},[3])
 ;

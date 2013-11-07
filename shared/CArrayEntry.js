@@ -11,6 +11,10 @@ CArrayEntry.prototype.get = function (property) {
   return this.cArray.getProperty(property).saveGet(this.indexes);
 };
 
+CArrayEntry.prototype.get = function (property) {
+  return this.get(property);
+};
+
 CArrayEntry.prototype.forEachProperty = function (callback) {
   var self = this;
   this.cArray.forEachProperty(function (property) {
@@ -18,15 +22,19 @@ CArrayEntry.prototype.forEachProperty = function (callback) {
   });
 };
 
-CArrayEntry.prototype.forEachIndex = function (callback) {
-  return this.indexes.forEach(callback);
-};
-
 CArrayEntry.prototype.forEachKey = function (callback) {
   for (var i = 0; i<this.indexes.length; i++) {
     callback(this.cArray.indexes.getName(i), this.indexes[i]);
   }
 };
+
+
+
+CArrayEntry.prototype.forEachIndex = function (callback) {
+  return this.indexes.forEach(callback);
+};
+
+
 
 CArrayEntry.prototype.key = function (name) {
   var position = this.cArray.indexes.getPositionOf(name);

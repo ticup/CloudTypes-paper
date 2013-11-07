@@ -3,17 +3,19 @@
  */
 
 // This make sure we can run all the examples on one server/heroku instance.
-var makeGrocery = require('../examples/grocery/server/grocery.js');
-var makeProjects = require('../examples/projects/server/projects.js');
+var declareCounter  = require('../examples/counter/server/deploy.js');
+var declareGrocery  = require('../examples/grocery/server/grocery.js');
+var declareProjects = require('../examples/projects/server/projects.js');
 
 var CloudTypes = require('../server/main.js');
 
 var server = CloudTypes.createServer();
 var port = process.env.PORT || 8080;
 
-/* publish grocery cloudtypes through the http server */
-makeGrocery(server);
-makeProjects(server);
+/* declare the cloudtypes for all examples */
+declareCounter(server);
+declareGrocery(server);
+declareProjects(server);
 
 server.publish(port, __dirname + '/../');
 

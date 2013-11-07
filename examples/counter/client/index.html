@@ -1,0 +1,76 @@
+<html>
+<head></head>
+<body>
+<h1>Counter</h1>
+<div>
+  <div class=counter-container>
+    <div class=content></div>
+    <button class=inc> Increase </button>
+    <button class=dec> Decrease </button> <br>
+    <input class=amount type=text>
+    <button class=set> Set </button>
+  </div>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script src="/client/bundle.js"></script>
+<script>
+
+  // CloudTypes
+  //////////////
+  // create a new CloudTypes client
+  var client = CloudTypes.createClient();
+
+  // connect to the server
+  client.connect('localhost', function (state) {
+
+    // retrieve counter + set up View
+    var counter = state.get('counter');
+    var container = $('.counter-container');
+    var counterView = new CounterView(counter, container);
+    counterView.update();
+
+    // set up continuous synchronization with the server + updating of view
+    setInterval(function () {
+      state.yield();
+      counterView.update()
+    }, 200);
+
+  });
+
+   // CounterView (keeps the DOM in sync with the cloudtype)
+   ///////////////
+  function CounterView(counter, container) {
+    var self = this;
+    this.counter = counter;
+    this.container = container;
+    this.content = container.find('.content');
+
+    // Set up increase button
+    container.find('.inc').click(function () {
+      self.counter.add(1);
+      self.update();
+    });
+
+    // Set up decrease button
+    container.find('.dec').click(function () {
+      self.counter.add(-1);
+      self.update();
+    });
+
+    // Set up set button
+    container.find('.set').click(function () {
+      var amount = parseInt(container.find('.amount').val(), 10);
+      self.counter.set(amount);
+      self.update();
+    });
+  }
+
+  // Update the DOM with the counter value
+  CounterView.prototype.update = function () {
+    this.content.html(this.counter.get());
+  };
+
+
+</script>
+</html>

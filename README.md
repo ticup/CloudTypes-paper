@@ -66,7 +66,13 @@ That's it, even better is of course to add it as a dependency to your package.js
 
 Usage
 -----
+As an introduction we'll make [a simple counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html) example that can be incremented, decremented or set to a particular value. The complete code is in the repository and can be found [here](https://github.com/ticup/CloudTypes/blob/master/examples/counter/server/index.js).
 
+Remember that you can use this counter offline to, synchronizing with the other clients/server when you go online again.
+In case of *set* the counter will have the value last set by a client, nothing special here.
+In case of the *increment* and *decrement* though, all increments and decrements will be accumulated, resulting in the value that is the result of applying all the increments/decrements.
+
+Start by setting up the server and schema:
 ### Server
 
     var CloudTypes = require('cloudtypes').Server;
@@ -74,53 +80,253 @@ Usage
     // create a new CloudTypes server
     var cloudTypes = CloudTypes.createServer();
 
-    // Declare your schema
-    // Globals are declared as simple CloudTypes (currently only CInt and CString)
-    cloudTypes.declare('total', CloudTypes.CInt)
-              .declare('name' , CloudTypes.CString)
+    // Declare our counter
+    cloudTypes.declare('total'  , CloudTypes.CInt);
 
-    // Structures: Array and Entity
-    // 1. an array of index types/construction arguments: can be of type 'String', 'Int' and the name of any previously declared variable
-    // 2. an object of field CloudTypes (CInt or CString)
-              .declare('Grocery' , CloudTypes.CArray([{name: 'String'}], {toBuy: 'CInt'}));
-              .declare('Customer', CloudTypes.CEntity([], {name: 'CString'}));
-              .declare('Order'   , CloudTypes.CEntity([{customer: 'Customer'}, {Product: 'String'}], {amount: 'CInt'}));
-
-    // publish the types (using a port number) + optionally start a convenience static file server from given path (preferably root of your project)
+    // publish the counter + set up convenience static file server from this path
     cloudTypes.publish(8080, __dirname);
-
-    // If you prefer your own static file server, simply publish the types on their own (port number)
-    // or using an already existing node HttpServer
-    // cloudtypes.publish(8080);
-    // cloudtypes.publish(http);
 
 
 ### Client
 Load the CloudTypes client bundle into your html and start using the distributed CloudTypes. Assuming you are serving static files from your project root:
 
     <html>
-      <head></head>
-      <body></body>
-      <script src="node_modules/cloudtypes/client/bundle.js"></script>
-      <script>
-        // create a new CloudTypes client
-        window.client = CloudTypes.createClient();
+    <head></head>
+    <body>
+    <h1>Counter</h1>
+    <div>
+      <div class='counter-container'>
+        <div class='content'></div>
+        <button class='inc'> Increase </button>
+        <button class='dec'> Decrease </button> <br>
+        <input class='amount' type='text'>
+        <button class='set'> Set </button>
+      </div>
+    </div>
+    </body>
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="/client/bundle.js"></script>
+    <script>
 
-        // connect to the server
-        client.listen('localhost', function handler(state) {
+      // CloudTypes
+      //////////////
+      // create a new CloudTypes client
+      var client = CloudTypes.createClient();
 
-          // retrieve the counter CloudType variable
-          var counter = state.get('counter');
+      // connect to the server
+      client.connect('localhost', function (state) {
 
-          // start using the cloudtypes environment
-          counter.set(1);
-          counter.add(10);
+        // retrieve counter + set up View
+        var counter = state.get('counter');
+        var container = $('.counter-container');
+        var counterView = new CounterView(counter, container);
+        counterView.update();
 
-          // synchronise with the server
+        // set up continuous synchronization with the server + updating of view
+        setInterval(function () {
           state.yield();
-        }
-      </script>
+          counterView.update()
+        }, 200);
+
+      });
+
+      // CounterView
+      ///////////////
+      // keeps the DOM in sync with the cloudtype
+      function CounterView(counter, container) {
+        var self = this;
+        this.counter = counter;
+        this.container = container;
+        this.content = container.find('.content');
+
+        // Set up increase button
+        container.find('.inc').click(function () {
+          self.counter.add(1);
+          self.update();
+        });
+
+        // Set up decrease button
+        container.find('.dec').click(function () {
+          self.counter.add(-1);
+          self.update();
+        });
+
+        // Set up set button
+        container.find('.set').click(function () {
+          var amount = parseInt(container.find('.amount').val(), 10);
+          self.counter.set(amount);
+          self.update();
+        });
+      }
+
+      // Update the DOM with the counter value
+      CounterView.prototype.update = function () {
+        this.content.html(this.counter.get());
+      };
+
+
+    </script>
     </html>
+
+That's it! Run your server and visit the client html or just check out the [live example](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html).
+
+### Overview
+Here is a quick overview of other (perhaps more sophisticated) things you can do with CloudTypes.
+
+#### Server
+    // Globals are declared as simple CloudTypes (currently only CInt and CString)
+    cloudTypes.declare('counter', CloudTypes.CInt)
+              .declare('name'   , CloudTypes.CString)
+
+    // Array: An infinite map from (possibly multiple) indexes to properties
+    //  where each possible combination of indexes their properties are initialized to the default value of that CloudType (0 for CInt, "" for CString)
+    // Declaration Arguments:
+    // 1. An array of index types: simple objects that map the index name to the index type. Type can be either 'string', 'int' or the name of any previously declared variable.
+    // 2. An object of property types: object that maps property names to property types. Properties can only be of type CloudType (CInt or CString).
+              .declare('Grocery', CloudTypes.CArray([{name: 'string'}], {toBuy: 'CInt'}));
+              .declare('Birds'  , CloudTypes.CArray([{name: 'string'}, {color: 'string'}, {gender: 'string'}], {count: 'CInt'}));
+
+    // Entity: An Array that has the create and delete operations, which adds the notion of existence to Array.
+    //  (Since (conceptually) all possible indexes of an Array are always initialized, it has no notion of existence)
+    // Declaration Arguments:
+    // 1. An array of construction arguments: exactly the same as for Array (but now called construction argument instead of index).
+    // 2. An object of property types: also exactly the same as for Array.
+              .declare('Customer', CloudTypes.CEntity([], {name: 'CString'}));
+              .declare('Order'   , CloudTypes.CEntity([{customer: 'Customer'}, {Product: 'String'}], {amount: 'CInt'}));
+
+    // Using an Entity as index type for an array or as construction argument for an entity makes that array/entity a weak entity.
+    // A weak entity automatically gets deleted whenever the entity it depends on gets deleted.
+
+#### Client
+
+    // asynchronous synchronization (see API 3.2 yield)
+    state.yield();
+
+    // synchronous synchronzation (see API 3.3 flush)
+    state.flush(function (error) {
+      // flushed with the server if no error is set
+    )}
+
+    /* CInt operations */
+    var counter = state.get('counter');
+
+    // add is commutative. This means all add operations can be easily accumulated,
+    / thus making sure everyone's add is registered and taken into account
+    counter.add(1);
+    counter.add(-10);
+
+    // set is not commutative, it has last-set semantics
+    counter.set(42);
+
+    /* CString operations */
+    var name = state.get('name');
+
+    // last-set semantics
+    name.set('foo');
+
+    // will set the string only if it hasn't been set by someone else.
+    // if for example the string isn't set locally but it has been set on the server, it will first be set
+    // locally but upon joining with the server the value will be 'unset' again.
+    name.setIfEmpty('foo');
+
+    // in combination with flush, this provides strong consistency
+    seat.get('assignedTo').setIfEmpty(customer);
+    state.flush(function (error) {
+      if (error || !seat.get('assignedTo').get() != customer)
+        // reservation failed
+      else
+        // reservation succeeded
+    });
+
+
+    /* Array */
+    var Grocery = state.get('Grocery');
+
+    // retrieve an entry by index
+    var apples = Grocery.get('apples');
+
+    // get an array of all entries where given property is not the default value (0 for CInt, '' for CString)
+    var entries = Grocery.entries('toBuy');
+
+    // filter the entries (multiple 'where's chainable)
+    var filtered = Grocery
+                      .where(function (entry) { return entry.key('name') !== 'apples'; })
+                      .entries('toBuy');
+
+    // order the entries (must first apply at least one 'where' before orderBy can be used)
+    // ordering currently not chainable.
+    var ordered = Grocery
+                    .where()
+                    .orderBy('toBuy', 'desc')
+                    .entries('toBuy');
+
+    /* Entity */
+    // has got the same interface as Array, with some additions:
+
+    var Order = state.get('Order');
+    var Customer = state.get('Customer');
+
+    // create a new entity entry
+    var customer = Customer.create();
+    var order = Order.create(customer, "MacBook 17'");
+
+    // delete an entry (also deletes order!!)
+    customer.delete();
+
+    // get all entities (possible for entity, not for array)
+    Order.all();
+
+    // where/orderBy + all
+    Order.where()
+         .orderBy('amount', 'asc')
+         .all();
+
+
+    /* Entry (Entity + Array) */
+    // retrieve a key
+    var name = apples.key('name');
+
+    // retrieve a property
+    var toBuy = apples.get('toBuy');
+
+    // loop over all properties
+    apples.forEachProperty(function (name, value) { });
+
+    // loop over all indexes
+    apples.forEachKey(function (name, value) { });
+
+    // equality: retrieving the same entry twice will NOT return the same js object twice
+    // equality is performed using the equals operation on the entry
+    Grocery.get('apples') != Grocery.get('apples')
+    Grocery.get('apples').equals(Grocer.get('apples')); // true
+
+    // values retrieved from the state (global cloudtypes, arrays or entities) are the same objects
+    state.get('Grocery') === state.get('Grocery')
+
+Examples
+--------
+The examples are running live on heroku: [Counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html).
+See the examples folder (e.g. [the grocery example](https://github.com/ticup/CloudTypes/blob/master/examples/grocery/server/index.js)) on how to get everything working.
+
+You can run the examples on your own computer if you have the optional dependencies installed (static file server):
+
+    npm install --optional
+
+Then start a single example by running e.g.:
+
+    node examples/grocery/server/index.js
+
+You can also run all examples at once by running (this is the file that is used to run the examples on Heroku):
+
+    node deploy/index.js
+
+
+Visit the examples:
+
+    http://localhost:8080/examples/grocery/client/index.html
+    http://localhost:8080/examples/projects/client/index.html
+
+
 
 API
 ---
@@ -143,15 +349,15 @@ API
 
  1.4 *CArray*
 
- > The Array declaration function.
+ > The Array declaration function (see CloudType API's: 1. CArray/CEntity declaration).
 
  1.5 **CEntity**
 
- > The CEntity declaration function.
+ > The Entity declaration function (see CloudType API's: 1. CArray/CEntity declaration).
 
 2. **CloudTypeServer**
 
-  2.1 *declare(name, cloudtype)*
+  2.1 *declare(name, type)*
 
   > Declares a variable with given name of given type. Can only be executed before publish and is used to set up the schema.
 
@@ -167,7 +373,7 @@ API
 
   2.2 *publish(port number or HttpServer)*
   
- > Publishes the declared state on given port or by using given HttpServer as host.
+ > Publishes the declared state on given port or by using given node HttpServer as host.
  
         // publish on given port
         server.publish(8090);
@@ -178,11 +384,11 @@ API
 
   > Publishes the declared state on given port and starts a convenience static file server from given path.
 
-         // publish on given port + serve files from this path
+         // publish on given port + serve files from path of this file
          server.publish(8090, __dirname);
 
 ### Client
-1. **CloudTypes** (global variable/client library API)
+1. **CloudTypes** (global window variable/client library API)
 
  1.1 *createClient()*
 
@@ -191,15 +397,16 @@ API
 
 2. **CloudTypeClient**
 
- 2.1 *connect(url, callback)*
+ 2.1 *connect(url, connected, reconnected)*
  > Tries to connect to a CloudTypeServer hosted on given url (e.g. 'localhost' or 'http://localhost:8090').
-Invokes the callback with an error if failed to connect, otherwise it provides a State as second argument (the revision).
+Invokes connected with an error if failed to connect, otherwise it provides a State as second argument (the revision) when connected with the server for the first time.
+Reconnected will be invoked whenever connection with the server was lost but established again (note: normally one shouldn't need this callback!! We just use it for the online/offline buttons in our examples which depend on the internal socket of the client that gets reset and thus needs new listeners. In a normal use case all connecting/disconnecting/reconnecting problems are solved for you)
 
         var client = CloudTypes.createClient();
-        client.listen('localhost', function (error, state) {
+        client.connect('localhost', function (error, state) {
           if (error)
             throw error;
-          // perform operations on the state
+          // start the application that depends on the state.
         });
 
 3. **State**
@@ -208,14 +415,20 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
 
  3.1 *get(string name)*
  
- > Retrieves the global cloud type, entity or array with given name from the state.
+ > Retrieves the global CloudType, Entity or Array with given name from the state (as declared with .declare(name, type) on the server side)
+
+        // server
+        cloudTypes.declare('counter', CloudTypes.CInt);
+
+        // client
+        var counter = state.get('counter'); // instance of CInt
 
  3.2 *yield()*
 
  > Instruct to asynchronously synchronize with the server. Yield can do 3 different things when invoked in another context:
- > 1. Not expecting a revision from the server: send revision to server. (e.g. first time when you call yield)
+ > 1. Not expecting a revision from the server: send this client's revision to server. (e.g. first time when you call yield)
  > 2. A revision from the server has arrived: merge it into the current revision.
- > 3. Waiting for a revision from the server: do nothing. This allows for applications to keep on working when offline.
+ > 3. Waiting for a revision from the server: do nothing. This allows for applications to keep working when offline.
 
  3.3 *flush(callback, [timeout 2000])*
 
@@ -225,12 +438,25 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
           if (error)
             // was not able to synchronize after 4 seconds
           else 
-            // succesfully synchronized with server
+            // succesfully synchronized with server, has now got merged state of server.
         }, 4000);
+
+ > This provides the user with *strong consistency*, e.g. when a ticket reservation application needs to do a reservation it needs to be sure that seat is only taken once (in combination with 5.3 CString::setIfEmpty)
+
+         seat.get('assignedTo').setIfEmpty(customer);
+         state.flush(function (error) {
+           if (error || !seat.get('assignedTo').get() != customer)
+             // reservation failed
+           else
+             // reservation succeeded
+         });
+
 
 ### CloudType API's
 
- For a more detailed explanation of the CloudTypes their API and semantics you can read the paper. Note that we use the names CArray and CEntity, while the CArray and CEntity are actually not CloudTypes themselves, in contrary to CInt and CString. We do this in order to avoid conflict with the already existing global Array object in Javascript.
+ This elaborates the CloudTypes their API, which are the objects that can be used as properties for the structures.
+ Note that we use the names CArray and CEntity, while the CArray and CEntity are actually not CloudTypes themselves, in contrary to CInt and CString. We do this in order to avoid conflict with the already existing global Array object in Javascript.
+ For a more detailed explanation of the CloudTypes their semantics you can always read the [paper](http://research.microsoft.com/apps/pubs/default.aspx?id=163842).
 
 1. **CArray/CEntity declaration**
   > A CArray and CEntity are both declared in the same way, namely
@@ -252,10 +478,15 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
 > An Array is an infinite mapping from all possible values for the index types to the declared property types. All these infinite entries are conceptually present and their properties are initialized with the default values. One can either retrieve an entry explicitly by using its indexes or one can get a set of entries for which a given property is not the defaul value.
 
   2.1 *get(index1, index2, ...)*
-  > Returns the entry for the given indexes (if it is neither deleted, nor depends on a deleted entity).
+  > Returns the entry with given indexes (if it is neither deleted, nor depends on a deleted entity).
+
+        Birds.get("pigeon", "white", "male")
 
   2.2 *entries(propertyName)*
   > Returns a normal javascript Array of all entries for which the given property is not the default value (and for which none of the index values is either a deleted entity, nor depends on a deleted entity).
+
+      // return all entries for which the count isn't 0
+      Birds.entries("count")
 
   2.3 *CArrayEntry*
   > An instance of this object is returned by the get and entries methods and represents an entry in the Array with certain index values.
@@ -266,20 +497,58 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
     2.3.2 *key(keyName)*
     > Returns the value of the given keyName for this entry.
 
+    2.3.3 *equals(entry)*
+    > Returns true if the entries are equal to each other.
+    This operation has to be used to check for equality for entries and not the built-in equality operators.
+    Namely, the entry object returned for the same entry is not the same object.
+
+    2.3.4 *forEachProperty(callback)*
+    > Calls the callback for each property with its name and value
+
+    2.3.5 *forEachKey(callback)*
+    > Calls the callback for each index with its name and value
+
 3. **CEntity**
 > An Entity is like an Array, except it has an extra layer which makes sure there is the notion of existing and deleted entries (which there is not for the Array) by using the create and delete methods.
 
   3.1 *get(index1, index2, ...)*
   > Returns the CEntityEntry for the given indexes (if it is neither deleted, nor depends on a deleted entity).
 
+        var customer = Customer.create();
+        var order2 = Order.get(customer, "MacBook 17'");
+        order1.equals(order2);
+
   3.2 *create(index1, index2 ...)*
   > Creates a new CEntityEntry with given index values.
 
+        Order.create(customer, "MacBook 17'");
+
   3.3 *where(filter)*
-  > Sets up a filter that can be chained with multiple other where clauses and which is finalized by using the all method.
+  > Sets up a filter that can be chained with multiple other *where* methods or an *orderBy* and which is finalized by using the *all* or *entities* methods.
+
+  3.4 *orderBy(propertyName, 'asc' (default) | 'desc')*
+  > Can be called on the result of calling *where* on a CEntity and the *all* and *entities* methods can be used on the result of orderBy.
+  Makes sure that the result returned by the finalizing method is ordered by given propertyName and given direction.
+
+        Order.where(function (entry) { return entry.key('name') === 'Macbook' })
+             .orderBy('amount', 'asc')
+             .all();
 
   3.4 *all()*
-  > Returns an array of CEntityEntries, possibly filtered by previously set where clauses (can be used on the CEntity directly or on the result of chained where calls).
+  > Returns an array of CEntityEntries, possibly filtered by previously chained *where* methods and ordered by previous *orderBy* methods.
+  Can thus be used on the CEntity directly or on the result of chained *where* calls or *orderBy* call.
+
+        Order.where(...)
+             .orderBy('amount', 'asc')
+             .all();
+
+        Order.where(...)
+             .where(...)
+             .all();
+
+        Order.where(...)
+             .entities('count');
+
 
   3.5 *CEntityEntry*
   > An instance of this object is returned by the create, get and all methods and represents an entry in an Entity with certain index values.
@@ -292,6 +561,17 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
 
     3.3.3 *delete()*
     > Delete this entry and all the other Entities/Arrays that depend on this entry.
+
+    3.3.4 *equals(entry)*
+    > Returns true if the entries are equal to each other.
+    This operation has to be used to check for equality for entries and not the built-in equality operators.
+    Namely, the entry object returned for the same entry is not the same object.
+
+    3.3.5 *forEachProperty(callback)*
+    > Calls the callback for each property with its name and value
+
+    3.3.6 *forEachKey(callback)*
+    > Calls the callback for each index with its name and value
 
 4. **CInt**
 
@@ -326,31 +606,6 @@ Invokes the callback with an error if failed to connect, otherwise it provides a
         });
 
 
-Examples
---------
-There are currently two examples implemented and running live on heroku: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html).
-See the examples folder (e.g. [the grocery example](https://github.com/ticup/CloudTypes/blob/master/examples/grocery/server/index.js)) on how to get everything working.
-
-You can run the examples on your own computer if you have the optional dependencies installed (static file server):
-
-
-    npm install --optional
-
-Then start a single example by running e.g.:
-
-    node examples/grocery/server/index.js
-
-You can also run all examples at once by running (this is the file that is used to run the examples on Heroku):
-
-    node deploy/index.js
-    
-    
-Visit the examples:
-
-    http://localhost:8080/examples/grocery/client/index.html
-    http://localhost:8080/examples/projects/client/index.html
-
-
 Library Goal
 -------------
 This library will be kept as close to the specifications of the paper as a JavaScript library implementation allows. When it is finished, some non-trivial applications are going to be added that explore the boundaries of the CloudTypes concept in the JavaScript environment. Afterwards forks are going to be made to explore extensions that could possibly alleviate the integration of CloudTypes in the JavaScript web development environment and to explore performance optimisations.
@@ -366,11 +621,12 @@ This section keeps track of the state of this library.
 * The Array and Entity structures for the state.
 * CInt and CString implementation of a cloud type.
 * Grocery list example with an Array and global CInt.
+* Project Manager example using Entities which also demonstrates weak Entities
+
 
 ### Currently worked on:
 
 * CSet cloud type implementation.
-* Example using Entities which also demonstrates weak Entities
 
 
 The Code
@@ -443,10 +699,10 @@ Unit tests for the State object its marshaling, forking and joining using the st
 * **Property.js**
 Unit tests for the Property object (the Property object resembles the complete property function for each property declared for an Array or Entity).
 
-* **CArray**
+* **CArray.js**
 Unit tests for the CArray object.
 
-* **CEntity**
+* **CEntity.js**
 Unit tests for the CEntity object.
 
 * **integration.js**

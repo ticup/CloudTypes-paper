@@ -10,4 +10,4 @@ var port = process.env.PORT || 8080;
 /* publish grocery cloudtypes through the http server */
 makeProjects(server).publish(port, __dirname + '/../../../');
 
-console.log("#### CloudTypes Trello Example server running on " + port + " ####");
+console.log("#### CloudTypes Projects Example server running on " + port + " ####");

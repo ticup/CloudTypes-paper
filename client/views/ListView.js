@@ -28,6 +28,11 @@ var ListView = View.extend({
         view.update();
         delete views[id];
 
+        // reposition
+        if (view.position !== ctr) {
+          insertAt(self.html, ctr, view.html);
+        }
+
         // view not present: create, update and insert html in DOM
       } else {
         view = self.createItemView(item, ctr);

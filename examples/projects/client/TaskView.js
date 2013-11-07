@@ -7,16 +7,24 @@
 var TaskView = CloudTypes.View.extend({
   initialize: function () {
     var self  = this;
-    this.html = $("<li class='list-group-item'></li>")
+    this.html = $("<li class='list-group-item task-item'></li>")
         .click(function () { if (!self.editing) { self.edit(); } });
-    this.description = $("<span></span>").appendTo(this.html);
+    this.priorityVotes = $("<div class='priority-votes task-col'></div>").appendTo(this.html);
+    this.up = $("<span class='priority-up glyphicon glyphicon-chevron-up'></span>")
+        .appendTo(this.priorityVotes)
+        .click(function () { self.priorityUp(); return false; });
+    this.down = $("<span class='priority-down glyphicon glyphicon-chevron-down'></span>")
+        .appendTo(this.priorityVotes)
+        .click(function () { self.priorityDown(); return false; });
+    this.description = $("<div class='description task-col'></div>").appendTo(this.html);
+    this.editor = $("<div class='hide'></div>").appendTo(this.html);
     this.span = $("<span class='text-muted'></span>").appendTo(this.html);
+    this.badge = $("<span class='badge'></span>").appendTo(this.html);
+
   },
 
   update: function () {
-    if (!this.editing) {
-      this.html.html(this.entry.get('description').get());
-    }
+    throw new Error("Implemented by subclass only");
   },
 
   edit: function () {
@@ -26,7 +34,9 @@ var TaskView = CloudTypes.View.extend({
     var task = this.entry;
     this.app.finishEdit();
     this.editing = true;
-    $(li).html($('#edittaskform')
+    this.description.addClass('hide');
+    this.editor.removeClass('hide')
+               .html($('#edittaskform')
         .removeClass('hide')
         .submit(function (event) {
           event.preventDefault();
@@ -52,6 +62,15 @@ var TaskView = CloudTypes.View.extend({
     });
   },
 
+  priorityUp: function () {
+    this.app.increasePriority(this.entry, 1);
+    this.app.update();
+  },
+  priorityDown: function () {
+    this.app.decreasePriority(this.entry, 1);
+    this.app.update();
+  },
+
   finishEdit: function () {
     if (this.editing) {
       $('#edittaskform')
@@ -61,8 +80,8 @@ var TaskView = CloudTypes.View.extend({
           .find('input[type=text]').val('');
       $('#edittaskcancel').unbind();
       $('#edittaskdelete').unbind();
-      this.description = $("<span></span>").appendTo(this.html);
-      this.span = $("<span class='text-muted'></span>").appendTo(this.html);
+      this.editor.addClass('hide');
+      this.description.removeClass('hide');
       this.editing = false;
       this.update();
     }

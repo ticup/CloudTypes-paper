@@ -67,6 +67,8 @@ CEntity.prototype.setMax = function (entity1, entity2, index) {
 CEntity.prototype.where = function (filter) {
   var self = this;
   var sumFilter = filter;
+  var orderProperty = false;
+  var orderDir = false;
   return {
     all: function () {
       var entities = [];
@@ -74,7 +76,21 @@ CEntity.prototype.where = function (filter) {
         if (self.states[index] === OK && sumFilter(self.get(index)))
           entities.push(self.get(index));
       });
+      if (orderProperty) {
+        var property = self.get(orderProperty);
+        if (typeof property === 'undefined') {
+          throw new Error("orderBy only allowed on properties for the moment");
+        }
+        return entities.sort(function (entry1, entry2) {
+          return entry1.get(orderProperty).compare(entry2.get(orderProperty), (orderDir === "desc"));
+        });
+      }
       return entities;
+    },
+    orderBy: function (propertyName, dir) {
+      orderProperty = propertyName;
+      orderDir = dir;
+      return this;
     },
     where: function (newFilter) {
       sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
@@ -82,6 +98,14 @@ CEntity.prototype.where = function (filter) {
     }
   }
 };
+
+CEntity.prototype.orderBy = function (propertyName, dir) {
+  return {
+    all: function () {
+
+    }
+  };
+}
 
 CEntity.prototype.all = function () {
   var self = this;

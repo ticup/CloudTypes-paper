@@ -74,7 +74,7 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":19}],2:[function(require,module,exports){
+},{"../shared/State":20}],2:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
 var io          = require('socket.io-client');
 
@@ -154,7 +154,7 @@ Client.prototype.flushPush = function (pushState, flushPull) {
     flushPull(pullState);
   });
 };
-},{"../shared/State":19,"socket.io-client":8}],3:[function(require,module,exports){
+},{"../shared/State":20,"socket.io-client":8}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
 var ClientState     = require('./ClientState');
 
@@ -184,7 +184,7 @@ var CloudTypes = {
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":9,"../shared/CEntity":11,"../shared/CInt":13,"../shared/CString":14,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
+},{"../shared/CArray":9,"../shared/CEntity":12,"../shared/CInt":14,"../shared/CString":15,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
 /**
  * Created by ticup on 06/11/13.
  */
@@ -278,6 +278,11 @@ var ListView = View.extend({
       if (typeof view !== 'undefined') {
         view.update();
         delete views[id];
+        
+        // reposition
+        if (view.position !== ctr) {
+          insertAt(self.html, ctr, view.html);
+        }
 
         // view not present: create, update and insert html in DOM
       } else {
@@ -4273,12 +4278,14 @@ if (typeof define === "function" && define.amd) {
 }
 })();
 },{}],9:[function(require,module,exports){
-var CloudType   = require('./CloudType');
-var Indexes     = require('./Indexes');
-var Property    = require('./Property');
-var Properties  = require('./Properties');
-var CArrayEntry = require('./CArrayEntry');
-var util        = require('util');
+var CloudType     = require('./CloudType');
+var Indexes       = require('./Indexes');
+var Property      = require('./Property');
+var Properties    = require('./Properties');
+var CArrayEntry   = require('./CArrayEntry');
+var CArrayOrdered = require('./CArrayOrdered');
+
+var util          = require('util');
 
 module.exports = CArray;
 
@@ -4312,6 +4319,10 @@ CArray.prototype.get = function (indexes) {
 
 CArray.prototype.entries = function (propertyName) {
   return this.properties.get(propertyName).entries();
+};
+
+CArray.prototype.orderBy = function (property, property, dir) {
+  return CArrayOrdered(this, property, dir);
 };
 
 CArray.prototype.getProperty = function (property) {
@@ -4351,7 +4362,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":10,"./CloudType":15,"./Indexes":16,"./Properties":17,"./Property":18,"util":21}],10:[function(require,module,exports){
+},{"./CArrayEntry":10,"./CArrayOrdered":11,"./CloudType":16,"./Indexes":17,"./Properties":18,"./Property":19,"util":22}],10:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -4416,7 +4427,26 @@ CArrayEntry.prototype.equals = function (entry) {
   }
   return true;
 };
-},{"./Indexes":16}],11:[function(require,module,exports){
+},{"./Indexes":17}],11:[function(require,module,exports){
+/**
+ * Created by ticup on 06/11/13.
+ */
+
+function CArrayOrdered(cArray, property, dir) {
+  this.cArray   = cArray;
+  this.property = property;
+  this.dir      = dir || "asc";
+}
+
+
+CArrayOrdered.prototype.entries = function (propertyName) {
+  var self = this;
+  var array = this.cArray.entries(propertyName);
+  return array.sort(function (entry1, entry2) {
+    return entry1.get(self.property).compare(entry2.get(self.property), (dir === "desc"));
+  });
+};
+},{}],12:[function(require,module,exports){
 var CArray     = require('./CArray');
 var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
@@ -4486,6 +4516,8 @@ CEntity.prototype.setMax = function (entity1, entity2, index) {
 CEntity.prototype.where = function (filter) {
   var self = this;
   var sumFilter = filter;
+  var orderProperty = false;
+  var orderDir = false;
   return {
     all: function () {
       var entities = [];
@@ -4493,7 +4525,21 @@ CEntity.prototype.where = function (filter) {
         if (self.states[index] === OK && sumFilter(self.get(index)))
           entities.push(self.get(index));
       });
+      if (orderProperty) {
+        var property = self.get(orderProperty);
+        if (typeof property === 'undefined') {
+          throw new Error("orderBy only allowed on properties for the moment");
+        }
+        return entities.sort(function (entry1, entry2) {
+          return entry1.get(orderProperty).compare(entry2.get(orderProperty), (orderDir === "desc"));
+        });
+      }
       return entities;
+    },
+    orderBy: function (propertyName, dir) {
+      orderProperty = propertyName;
+      orderDir = dir;
+      return this;
     },
     where: function (newFilter) {
       sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
@@ -4501,6 +4547,14 @@ CEntity.prototype.where = function (filter) {
     }
   }
 };
+
+CEntity.prototype.orderBy = function (propertyName, dir) {
+  return {
+    all: function () {
+
+    }
+  };
+}
 
 CEntity.prototype.all = function () {
   var self = this;
@@ -4559,7 +4613,7 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":9,"./CEntityEntry":12,"./Indexes":16,"./Properties":17,"./Property":18}],12:[function(require,module,exports){
+},{"./CArray":9,"./CEntityEntry":13,"./Indexes":17,"./Properties":18,"./Property":19}],13:[function(require,module,exports){
 var Indexes     = require('./Indexes');
 var CArrayEntry = require('./CArrayEntry');
 
@@ -4599,7 +4653,7 @@ CEntityEntry.prototype.delete = function () {
 CEntityEntry.prototype.toString = function () {
   return Indexes.createIndex(this.indexes);
 };
-},{"./CArrayEntry":10,"./Indexes":16}],13:[function(require,module,exports){
+},{"./CArrayEntry":10,"./Indexes":17}],14:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CInt;
@@ -4685,7 +4739,11 @@ CInt.prototype.replaceBy = function (cint) {
 CInt.prototype.isDefault = function () {
   return (this.get() === 0);
 };
-},{"./CloudType":15,"util":21}],14:[function(require,module,exports){
+
+CInt.prototype.compare = function (cint, reverse) {
+  return ((reverse ? -1 : 1) * (this.get() - cint.get()));
+};
+},{"./CloudType":16,"util":22}],15:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
 module.exports = CString;
@@ -4797,7 +4855,11 @@ CString.prototype.replaceBy = function (cstring) {
 CString.prototype.isDefault = function () {
   return (this.get() === '');
 };
-},{"./CloudType":15,"util":21}],15:[function(require,module,exports){
+
+CString.prototype.compare = function (cstring, reverse) {
+  return ((reverse ? -1 : 1) * (this.get().localeCompare(cstring.get())));
+};
+},{"./CloudType":16,"util":22}],16:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
@@ -4830,7 +4892,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -4925,7 +4987,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -4973,7 +5035,7 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":18}],18:[function(require,module,exports){
+},{"./Property":19}],19:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
 function Property(name, ctypeName, cArray, values) {
@@ -5050,7 +5112,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":15}],19:[function(require,module,exports){
+},{"./CloudType":16}],20:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5279,7 +5341,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":9,"./CEntity":11,"./CloudType":15,"util":21}],20:[function(require,module,exports){
+},{"./CArray":9,"./CEntity":12,"./CloudType":16,"util":22}],21:[function(require,module,exports){
 
 
 //
@@ -5497,7 +5559,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6042,5 +6104,5 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":20}]},{},[3])
+},{"_shims":21}]},{},[3])
 ;

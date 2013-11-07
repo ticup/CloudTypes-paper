@@ -83,3 +83,7 @@ CInt.prototype.replaceBy = function (cint) {
 CInt.prototype.isDefault = function () {
   return (this.get() === 0);
 };
+
+CInt.prototype.compare = function (cint, reverse) {
+  return ((reverse ? -1 : 1) * (this.get() - cint.get()));
+};

@@ -25,4 +25,4 @@ if (process.env.HEROKU) {
   });
 }
 
-console.log("#### CloudTypes Trello Example server running on " + port + " ####");
+console.log("#### CloudTypes Example server running on " + port + " ####");

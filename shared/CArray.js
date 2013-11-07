@@ -1,9 +1,11 @@
-var CloudType   = require('./CloudType');
-var Indexes     = require('./Indexes');
-var Property    = require('./Property');
-var Properties  = require('./Properties');
-var CArrayEntry = require('./CArrayEntry');
-var util        = require('util');
+var CloudType     = require('./CloudType');
+var Indexes       = require('./Indexes');
+var Property      = require('./Property');
+var Properties    = require('./Properties');
+var CArrayEntry   = require('./CArrayEntry');
+var CArrayOrdered = require('./CArrayOrdered');
+
+var util          = require('util');
 
 module.exports = CArray;
 
@@ -37,6 +39,10 @@ CArray.prototype.get = function (indexes) {
 
 CArray.prototype.entries = function (propertyName) {
   return this.properties.get(propertyName).entries();
+};
+
+CArray.prototype.orderBy = function (property, property, dir) {
+  return CArrayOrdered(this, property, dir);
 };
 
 CArray.prototype.getProperty = function (property) {

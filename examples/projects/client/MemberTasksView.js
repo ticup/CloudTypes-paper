@@ -7,7 +7,10 @@
 var MemberTasksView = CloudTypes.EditableListView.extend({
   value: function () {
     var member = this.member;
-    return this.app.Tasks.where(function (task) { return task.key('assignee').equals(member); }).all();
+    return this.app.Tasks
+        .where(function (task) { return task.key('assignee').equals(member); })
+        .orderBy('priority', 'desc')
+        .all();
   },
   update: function () {
     MemberTasksView.__super__.update.call(this);

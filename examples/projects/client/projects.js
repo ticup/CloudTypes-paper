@@ -95,7 +95,6 @@ Application.prototype.renameProject = function (project, name) {
 Application.prototype.createTask = function (member, project) {
   console.log("creating new Task");
   var task = this.Tasks.create([member, project]);
-  task.get('description').set("New Task");
   this.state.yield();
   return task;
 };
@@ -110,6 +109,15 @@ Application.prototype.renameTask = function (task, description) {
   console.log("rename task " + task + " to " + description);
   task.get('description').set(description);
   this.state.yield();
+};
+
+Application.prototype.increasePriority = function (task, amount) {
+  task.get('priority').add(amount);
+  this.state.yield();
+};
+
+Application.prototype.decreasePriority = function (task, amount) {
+  this.increasePriority(task, - amount);
 };
 
 

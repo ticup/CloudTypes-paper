@@ -10,7 +10,7 @@ function declareProjects(server) {
   return server
       .declare('Member' , CloudTypes.CEntity([], {name: 'CString'}))
       .declare('Project', CloudTypes.CEntity([], {name: 'CString'}))
-      .declare('Task'   , CloudTypes.CEntity([{assignee: 'Member'}, {project: 'Project'}], {description: 'CString'}));
+      .declare('Task'   , CloudTypes.CEntity([{assignee: 'Member'}, {project: 'Project'}], {description: 'CString', priority: 'CInt'}));
 }
 
 module.exports = declareProjects;

@@ -10,5 +10,6 @@ var MemberTaskView = TaskView.extend({
       this.span.html(" (" + this.entry.key('project').get('name').get() + ")");
       this.description.html(this.entry.get('description').get());
     }
+    this.badge.html(this.entry.get('priority').get());
   }
 });

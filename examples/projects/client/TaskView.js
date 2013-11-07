@@ -9,17 +9,18 @@ var TaskView = CloudTypes.View.extend({
     var self  = this;
     this.html = $("<li class='list-group-item task-item'></li>")
         .click(function () { if (!self.editing) { self.edit(); } });
-    this.priorityVotes = $("<div class='priority-votes task-col'></div>").appendTo(this.html);
-    this.up = $("<span class='priority-up glyphicon glyphicon-chevron-up'></span>")
+    this.badge = $("<span class='badge'></span>").appendTo(this.html);
+    this.content = $("<div class='task-content'></div>").appendTo(this.html);
+    this.priorityVotes = $("<div class='priority-votes task-col'></div>").appendTo(this.content);
+    this.up = $("<a class='priority-up' href='#'><span class='glyphicon glyphicon-chevron-up'></span></a>")
         .appendTo(this.priorityVotes)
         .click(function () { self.priorityUp(); return false; });
-    this.down = $("<span class='priority-down glyphicon glyphicon-chevron-down'></span>")
+    this.down = $("<a class='priority-down' href='#'><span class='glyphicon glyphicon-chevron-down'></span></a>")
         .appendTo(this.priorityVotes)
         .click(function () { self.priorityDown(); return false; });
-    this.description = $("<div class='description task-col'></div>").appendTo(this.html);
-    this.editor = $("<div class='hide'></div>").appendTo(this.html);
-    this.span = $("<span class='text-muted'></span>").appendTo(this.html);
-    this.badge = $("<span class='badge'></span>").appendTo(this.html);
+    this.description = $("<div class='description task-col'></div>").appendTo(this.content);
+    this.editor = $("<div class='hide'></div>").appendTo(this.content);
+    this.span = $("<span class='text-muted'></span>").appendTo(this.content);
 
   },
 

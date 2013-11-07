@@ -54,8 +54,13 @@ body {
 .task-item { padding: 10px 15px 10px 5px; }
 .priority-votes { margin-right: 10px; }
 .task-col { display: inline-block; }
+
+.priority-down,
+.priority-up { color: #333 }
 .priority-up:hover,
 .priority-down:hover { color: #428bca }
+.task-content { width: 92%; }
+
 
 /* Custom page CSS
 -------------------------------------------------- */

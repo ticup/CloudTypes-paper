@@ -11,10 +11,6 @@ CArrayEntry.prototype.get = function (property) {
   return this.cArray.getProperty(property).saveGet(this.indexes);
 };
 
-CArrayEntry.prototype.get = function (property) {
-  return this.get(property);
-};
-
 CArrayEntry.prototype.forEachProperty = function (callback) {
   var self = this;
   this.cArray.forEachProperty(function (property) {

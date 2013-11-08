@@ -11,10 +11,10 @@ State.prototype.init = function (cid, client) {
   this.client   = client;
 };
 
-State.prototype.reinit = function (cid, client, state) {
-  this.cid      = cid;
+State.prototype.reinit = function (client) {
   this.client   = client;
-  this.yieldPull(state);
+  this.pending  = false;
+  this.received = false;
 };
 
 State.prototype.createUID = function (uid) {

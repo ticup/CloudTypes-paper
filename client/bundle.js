@@ -12,10 +12,10 @@ State.prototype.init = function (cid, client) {
   this.client   = client;
 };
 
-State.prototype.reinit = function (cid, client, state) {
-  this.cid      = cid;
+State.prototype.reinit = function (client) {
   this.client   = client;
-  this.yieldPull(state);
+  this.pending  = false;
+  this.received = false;
 };
 
 State.prototype.createUID = function (uid) {
@@ -102,28 +102,26 @@ Client.prototype.connect = function (host, options, connected, reconnected) {
   this.reconnected = reconnected;
 
   this.socket = io.connect(host, options);
-  this.socket.on('init', function (json) {
-    var state = State.fromJSON(json.state);
+  this.socket.on('connect', function () {
 
-    if (self.initialized) {
-      self.state.reinit(json.cid, self, state);
+    if (typeof self.uid === 'undefined') {
+      console.log('client connected for first time');
+      self.socket.emit('init', function (json) {
+        console.log(json.uid);
+        var state = State.fromJSON(json.state);
+        self.uid = json.uid;
+        self.state = state;
+        self.state.init(json.cid, self);
+        connected(self.state);
+      });
+    } else {
+      console.log("client reconnected");
+      self.state.reinit(self);
       if (typeof reconnected === 'function') {
         reconnected(self.state);
       }
-      return;
     }
-
-    self.initialized = true;
-    console.log(state);
-    self.state = state;
-    self.state.init(json.cid, self);
-    connected(self.state);
   });
-};
-
-// only connect/disconnect
-Client.prototype.on = function (event, listener) {
-  this.listeners[event] = listener;
 };
 
 Client.prototype.reconnect = function () {
@@ -139,17 +137,31 @@ Client.prototype.close = function () {
   return this.disconnect();
 };
 
+Client.prototype.unrecognizedClient = function () {
+  alert("Sorry, his client is unrecognized by the server! The server probably restarted and your data is lost... Please refresh.");
+  this.disconnect();
+};
+
 Client.prototype.yieldPush = function (pushState) {
+  var self = this;
   var state = this.state;
-  this.socket.emit('YieldPush', pushState, function (stateJson) {
+  this.socket.emit('YieldPush', {uid: this.uid, state: pushState}, function (error, stateJson) {
+    if (error) {
+      return self.unrecognizedClient();
+    }
     var pullState = State.fromJSON(stateJson);
+    // TODO: with callback like flushpush
     state.yieldPull(pullState);
   });
 };
 
 Client.prototype.flushPush = function (pushState, flushPull) {
+  var self = this;
   var state = this.state;
-  this.socket.emit('FlushPush', pushState, function (stateJson) {
+  this.socket.emit('FlushPush', {uid: this.uid, state: pushState}, function (error, stateJson) {
+    if (error) {
+      return self.unrecognizedClient();
+    }
     var pullState = State.fromJSON(stateJson);
     flushPull(pullState);
   });
@@ -4383,15 +4395,19 @@ CArrayEntry.prototype.forEachProperty = function (callback) {
   });
 };
 
-CArrayEntry.prototype.forEachIndex = function (callback) {
-  return this.indexes.forEach(callback);
-};
-
 CArrayEntry.prototype.forEachKey = function (callback) {
   for (var i = 0; i<this.indexes.length; i++) {
     callback(this.cArray.indexes.getName(i), this.indexes[i]);
   }
 };
+
+
+
+CArrayEntry.prototype.forEachIndex = function (callback) {
+  return this.indexes.forEach(callback);
+};
+
+
 
 CArrayEntry.prototype.key = function (name) {
   var position = this.cArray.indexes.getPositionOf(name);

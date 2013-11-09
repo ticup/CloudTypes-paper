@@ -5,6 +5,7 @@ var Properties  = require('../shared/Properties');
 var Property    = require('../shared/Property');
 var CloudType   = require('../shared/CloudType');
 var CInt        = require('./extensions/CInt');
+var CString     = require('./extensions/CString');
 var should      = require('should');
 var stubs       = require('./stubs');
 var util        = require('util');
@@ -157,7 +158,7 @@ describe('CEntity state independent operations', function () {
       entity.forEachProperty(function (property) {
         property.should.be.an.instanceof(Property);
         property.name.should.equal("address");
-        property.ctypeName.should.equal("CString");
+        property.CType.should.equal(CString);
         ctr++;
       });
       ctr.should.equal(1);

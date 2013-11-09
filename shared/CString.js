@@ -1,26 +1,51 @@
 var CloudType = require('./CloudType');
 var util = require('util');
-module.exports = CString;
+
+exports.CString = CString;
+exports.Declaration = CStringDeclaration;
 
 
+// CIntDeclaration: function that allows the user to declare a property of type CInt
+// see CSet as to why this exists (parametrized declarations)
+function CStringDeclaration() { }
+
+CStringDeclaration.declare = function () {
+  return CString;
+}
+CStringDeclaration.fromJSON = function () {
+  return CString;
+}
+
+// register this declaration as usable (will also allow to create CString with CloudType.fromJSON())
+CStringDeclaration.tag = "CString";
+CloudType.register(CStringDeclaration);
+
+
+// Actual CString object of which an instance represents a variable of which the property is defined with CStringDeclaration
 function CString(value, written, cond) {
   this.value   = value   || '';
   this.written = written || false;
   this.cond    = cond    || false;
 }
-
 // put CloudType in prototype chain.
 CString.prototype = Object.create(CloudType.prototype);
-CString.prototype.tag = "CString";
 
-// register for CloudType.fromJSON 
-CloudType.register(CString);
+// Create a new instance of the declared CString for given entryIndex
+CString.newFor = function (entryIndex) {
+  return new CString();
+};
+
+CString.toJSON = function () {
+  return { tag: CStringDeclaration.tag };
+};
+
 CString.fromJSON = function (json) {
   return new CString(json.value, json.written, json.cond);
 };
 
-// used by the toJSON method of the CloudType prototype.
-CString.prototype._toJSON = function () {
+
+// Puts the declared type CString into json representation
+CString.prototype.toJSON = function () {
   return {
     value: this.value,
     written: this.written,

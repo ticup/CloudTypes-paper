@@ -1,26 +1,54 @@
 var CloudType = require('./CloudType');
 var util = require('util');
-module.exports = CInt;
+
+exports.CInt = CInt;
+exports.Declaration = CIntDeclaration;
 
 
+// CIntDeclaration: function that allows the user to declare a property of type CInt
+// see CSet as to why this exists (parametrized declarations)
+function CIntDeclaration() { }
+CIntDeclaration.declare = function () {
+  return CInt;
+};
+CIntDeclaration.fromJSON = function () {
+  return CInt;
+};
+
+
+// register this declaration as usable (will also allow to create CInt with CloudType.fromJSON())
+CIntDeclaration.tag = "CInt";
+CloudType.register(CIntDeclaration);
+
+
+// Actual CInt object of which an instance represents a variable of which the property is defined with CIntDeclaration
 function CInt(base, offset, isSet) {
   this.base = base || 0;
   this.offset = offset || 0;
   this.isSet = isSet || false;
 }
-
 // put CloudType in prototype chain.
 CInt.prototype = Object.create(CloudType.prototype);
-CInt.prototype.tag = "CInt";
 
-// register for CloudType.fromJSON 
-CloudType.register(CInt);
+// Create a new instance of the declared CInt for given entryIndex
+CInt.newFor = function (entryIndex) {
+  return new CInt();
+};
+
+// Puts the declared type CInt into json representation
+CInt.toJSON = function () {
+  return { tag: CIntDeclaration.tag };
+};
+
+
+// Retrieves an instance of a declared type CInt from json
+// Not the complement of CInt.toJSON, but complement of CInt.prototype._toJSON!!
 CInt.fromJSON = function (json) {
   return new CInt(json.base, json.offset, json.isSet);
 };
 
-// used by the toJSON method of the CloudType prototype.
-CInt.prototype._toJSON = function () {
+// Puts an instance of a declared type CInt to json
+CInt.prototype.toJSON = function () {
   return {
     base: this.base,
     offset: this.offset,

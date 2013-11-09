@@ -74,7 +74,7 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":21}],2:[function(require,module,exports){
+},{"../shared/State":22}],2:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
 var io          = require('socket.io-client');
 
@@ -166,7 +166,7 @@ Client.prototype.flushPush = function (pushState, flushPull) {
     flushPull(pullState);
   });
 };
-},{"../shared/State":21,"socket.io-client":8}],3:[function(require,module,exports){
+},{"../shared/State":22,"socket.io-client":8}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
 var ClientState     = require('./ClientState');
 
@@ -196,7 +196,7 @@ var CloudTypes = {
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":9,"../shared/CEntity":12,"../shared/CInt":15,"../shared/CString":16,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
+},{"../shared/CArray":9,"../shared/CEntity":12,"../shared/CInt":15,"../shared/CString":17,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
 /**
  * Created by ticup on 06/11/13.
  */
@@ -4297,6 +4297,8 @@ var Properties    = require('./Properties');
 var CArrayEntry   = require('./CArrayEntry');
 var CArrayQuery   = require('./CArrayQuery');
 
+var CSet = require('./CSet');
+
 var util          = require('util');
 
 module.exports = CArray;
@@ -4315,8 +4317,8 @@ function CArray(indexes, properties) {
 CArray.declare = function (indexDeclarations, propertyDeclarations) {
   var carray = new CArray(indexDeclarations);
   Object.keys(propertyDeclarations).forEach(function (propName) {
-    var cTypeName = propertyDeclarations[propName];
-    carray.addProperty(new Property(propName, cTypeName, carray));
+    var cType = propertyDeclarations[propName];
+    carray.addProperty(new Property(propName, cType, carray));
   });
   return carray;
 };
@@ -4374,7 +4376,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":10,"./CArrayQuery":11,"./CloudType":17,"./Indexes":18,"./Properties":19,"./Property":20,"util":23}],10:[function(require,module,exports){
+},{"./CArrayEntry":10,"./CArrayQuery":11,"./CSet":16,"./CloudType":18,"./Indexes":19,"./Properties":20,"./Property":21,"util":24}],10:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -4443,7 +4445,7 @@ CArrayEntry.prototype.equals = function (entry) {
   }
   return true;
 };
-},{"./Indexes":18}],11:[function(require,module,exports){
+},{"./Indexes":19}],11:[function(require,module,exports){
 /**
  * Created by ticup on 06/11/13.
  */
@@ -4647,7 +4649,7 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":9,"./CEntityEntry":13,"./CEntityQuery":14,"./Indexes":18,"./Properties":19,"./Property":20}],13:[function(require,module,exports){
+},{"./CArray":9,"./CEntityEntry":13,"./CEntityQuery":14,"./Indexes":19,"./Properties":20,"./Property":21}],13:[function(require,module,exports){
 var Indexes     = require('./Indexes');
 var CArrayEntry = require('./CArrayEntry');
 
@@ -4687,7 +4689,7 @@ CEntityEntry.prototype.delete = function () {
 CEntityEntry.prototype.toString = function () {
   return Indexes.createIndex(this.indexes);
 };
-},{"./CArrayEntry":10,"./Indexes":18}],14:[function(require,module,exports){
+},{"./CArrayEntry":10,"./Indexes":19}],14:[function(require,module,exports){
 /**
  * Created by ticup on 07/11/13.
  */
@@ -4722,27 +4724,55 @@ CEntityQuery.prototype.all = function () {
 },{"./CArrayQuery":11}],15:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
-module.exports = CInt;
+
+exports.CInt = CInt;
+exports.Declaration = CIntDeclaration;
 
 
+// CIntDeclaration: function that allows the user to declare a property of type CInt
+// see CSet as to why this exists (parametrized declarations)
+function CIntDeclaration() { }
+CIntDeclaration.declare = function () {
+  return CInt;
+};
+CIntDeclaration.fromJSON = function () {
+  return CInt;
+};
+
+
+// register this declaration as usable (will also allow to create CInt with CloudType.fromJSON())
+CIntDeclaration.tag = "CInt";
+CloudType.register(CIntDeclaration);
+
+
+// Actual CInt object of which an instance represents a variable of which the property is defined with CIntDeclaration
 function CInt(base, offset, isSet) {
   this.base = base || 0;
   this.offset = offset || 0;
   this.isSet = isSet || false;
 }
-
 // put CloudType in prototype chain.
 CInt.prototype = Object.create(CloudType.prototype);
-CInt.prototype.tag = "CInt";
 
-// register for CloudType.fromJSON 
-CloudType.register(CInt);
+// Create a new instance of the declared CInt for given entryIndex
+CInt.prototype.newFor = function (entryIndex) {
+  return new CInt();
+};
+
+// Puts the declared type CInt into json representation
+CInt.toJSON = function () {
+  return { tag: CIntDeclaration.tag };
+};
+
+
+// Retrieves an instance of a declared type CInt from json
+// Not the complement of CInt.toJSON, but complement of CInt.prototype._toJSON!!
 CInt.fromJSON = function (json) {
   return new CInt(json.base, json.offset, json.isSet);
 };
 
-// used by the toJSON method of the CloudType prototype.
-CInt.prototype._toJSON = function () {
+// Puts an instance of a declared type CInt to json
+CInt.prototype.toJSON = function () {
   return {
     base: this.base,
     offset: this.offset,
@@ -4809,30 +4839,174 @@ CInt.prototype.isDefault = function () {
 CInt.prototype.compare = function (cint, reverse) {
   return ((reverse ? -1 : 1) * (this.get() - cint.get()));
 };
-},{"./CloudType":17,"util":23}],16:[function(require,module,exports){
+},{"./CloudType":18,"util":24}],16:[function(require,module,exports){
+/**
+ * Created by ticup on 08/11/13.
+ */
+var CloudType = require('./CloudType');
+module.exports = CSetDeclaration;
+
+function CSetDeclaration() { }
+// CSetDeclaration: Declare a parametrized CSet type for a property
+CSetDeclaration.declare = function (elementType) {
+  function CSet(entryIndex) {
+    this.entryIndex = entryIndex;
+    this.elementType = elementType;
+    //this.cSetEntity should be set by State!
+  }
+
+  CSet.newFor = function (entryIndex) {
+    return new CSet(entryIndex);
+  };
+
+  // Puts the declared (parametrized) CSet into json
+  CSet.toJSON = function () {
+    return { tag: CSetDeclaration.tag, elementType: elementType };
+  };
+
+  // Retrieves an instance of a declared (parametrized) CSet from json
+  CSet.fromJSON = function (json, entryIndex) {
+    return new CSet(entryIndex);
+  };
+
+  CSet.prototype = CSetPrototype;
+  return CSet;
+}
+
+// called by CloudType to initialize the parametrized CSet for a property
+CSetDeclaration.fromJSON = function (json) {
+  return CSetDeclaration(json.elementType);
+};
+
+// register this declaration as usable (will also allow to create CSet with CloudType.fromJSON())
+CSetDeclaration.tag = "CSet";
+CloudType.register(CSetDeclaration);
+
+
+
+var CSetPrototype = Object.create(CloudType.prototype);
+
+
+// Operations for the parametrized CSets
+
+// don't need to save anything for a particular CSet instance of a property:
+// The info of the particular set is saved in a dedicated CSetEntity
+CSetPrototype.toJSON = function () {
+  return {  };
+};
+
+// semantic operations (all delegated to the dedicated entity)
+CSetPrototype.add = function (element) {
+  return this.proxyEntity.create(this.entryIndex, element);
+};
+
+CSetPrototype.contains = function (element) {
+  var entryIndex = this.entryIndex;
+  var elementType = this.elementType;
+  return (this.proxyEntity
+      .where(function (entry) {
+        return isEntryForElement(entry, entryIndex, elementType, element);
+      }).all().length !== 0);
+};
+
+CSetPrototype.remove = function (element) {
+  var entryIndex = this.entryIndex;
+  var elementType = this.elementType;
+  this.proxyEntity
+      .where(function (entry) {
+        return isEntryForElement(entry, entryIndex, elementType, element);
+      }).all().forEach(function (entry) {
+        entry.delete();
+      });
+};
+
+CSetPrototype.get = function () {
+  return this.proxyEntity.all();
+};
+
+function isEntryForElement(entry, entryIndex, elementType, element) {
+  return (entry.key('entryIndex') === entryIndex &&
+      (elementType === 'string' || elementType === 'int') ?
+      (entry.key('element') === element) :
+      (entry.key('element').equals(element)));
+}
+
+// Defining _join(cint, target) provides the join and joinIn methods
+// by the CloudType prototype.
+CSetPrototype._join = function (cset, target) {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+};
+
+CSetPrototype.fork = function () {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+  return this;
+};
+
+CSetPrototype.applyFork = function () {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+  return this;
+};
+
+CSetPrototype.replaceBy = function (cset) {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+};
+
+CSetPrototype.isDefault = function () {
+  return (this.get().length !== 0);
+};
+
+CSetPrototype.compare = function (cset, reverse) {
+  return ((reverse ? -1 : 1) * (this.get().length - cset.get().length));
+};
+},{"./CloudType":18}],17:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
-module.exports = CString;
+
+exports.CString = CString;
+exports.Declaration = CStringDeclaration;
 
 
+// CIntDeclaration: function that allows the user to declare a property of type CInt
+// see CSet as to why this exists (parametrized declarations)
+function CStringDeclaration() { }
+
+CStringDeclaration.declare = function () {
+  return CString;
+}
+CStringDeclaration.fromJSON = function () {
+  return CString;
+}
+
+// register this declaration as usable (will also allow to create CString with CloudType.fromJSON())
+CStringDeclaration.tag = "CString";
+CloudType.register(CStringDeclaration);
+
+
+// Actual CString object of which an instance represents a variable of which the property is defined with CStringDeclaration
 function CString(value, written, cond) {
   this.value   = value   || '';
   this.written = written || false;
   this.cond    = cond    || false;
 }
-
 // put CloudType in prototype chain.
 CString.prototype = Object.create(CloudType.prototype);
-CString.prototype.tag = "CString";
 
-// register for CloudType.fromJSON 
-CloudType.register(CString);
+// Create a new instance of the declared CString for given entryIndex
+CString.prototype.newFor = function (entryIndex) {
+  return new CString();
+};
+
+CString.toJSON = function () {
+  return { tag: CStringDeclaration.tag };
+};
+
 CString.fromJSON = function (json) {
   return new CString(json.value, json.written, json.cond);
 };
 
-// used by the toJSON method of the CloudType prototype.
-CString.prototype._toJSON = function () {
+
+// Puts the declared type CString into json representation
+CString.prototype.toJSON = function () {
   return {
     value: this.value,
     written: this.written,
@@ -4925,30 +5099,27 @@ CString.prototype.isDefault = function () {
 CString.prototype.compare = function (cstring, reverse) {
   return ((reverse ? -1 : 1) * (this.get().localeCompare(cstring.get())));
 };
-},{"./CloudType":17,"util":23}],17:[function(require,module,exports){
+},{"./CloudType":18,"util":24}],18:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
 
 CloudType.types = {};
 
-CloudType.register = function (type) {
-  CloudType.types[type.prototype.tag] = type;
+CloudType.register = function (typeDeclaration) {
+  CloudType.types[typeDeclaration.tag] = typeDeclaration;
 };
 
 CloudType.fromTag = function (tag) {
   return CloudType.types[tag];
 };
 
-CloudType.fromJSON = function (json) {
-  return CloudType.types[json.type].fromJSON(json.info);
+CloudType.isCloudType = function (CType) {
+  return (typeof CloudType.types[CType.tag] !== 'undefined');
 };
 
-CloudType.prototype.toJSON = function () {
-  return {
-    type: this.tag,
-    info: this._toJSON()
-  };
+CloudType.fromJSON = function (json, index) {
+  return CloudType.fromTag(json.tag).fromJSON(json, index);
 };
 
 CloudType.prototype.join = function (cint) {
@@ -4958,7 +5129,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -5053,7 +5224,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -5101,14 +5272,20 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":20}],20:[function(require,module,exports){
+},{"./Property":21}],21:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
-function Property(name, ctypeName, cArray, values) {
+function Property(name, CType, cArray, values) {
   this.name = name;
   this.indexes = cArray.indexes;
   this.cArray = cArray;
-  this.ctypeName = ctypeName;
+  this.CType = CType;
+  if (typeof CType === 'string') {
+    this.CType = CloudType.fromTag(CType);
+  }
+  if (!CloudType.isCloudType(this.CType)) {
+    throw Error ("Unknown property type in declaration (Must be CloudType (CInt, CString, CSet,...)): " + this.CType);
+  }
   this.values = values || {};
 }
 
@@ -5132,7 +5309,7 @@ Property.prototype.get = function (indexes) {
     index = this.indexes.get(indexes);
   ctype = this.values[index];
   if (typeof ctype === 'undefined') {
-    ctype = this.values[index] = new (CloudType.fromTag(this.ctypeName))();
+    ctype = this.values[index] = CType.newFor(indexes);
   }
   return ctype;
 };
@@ -5157,20 +5334,21 @@ Property.prototype.toJSON = function () {
   Object.keys(self.values).forEach(function (index) {
     values[index] = self.values[index].toJSON();
   });
-  return { name: this.name, type: this.ctypeName, values: values };
+  return { name: this.name, type: this.CType.toJson(), values: values };
 };
 
 Property.fromJSON = function (json, cArray) {
   var values = {};
+  var CType = CloudType.fromJSON(json.type);
   Object.keys(json.values).forEach(function (index) {
-    values[index] = CloudType.fromJSON(json.values[index]);
+    values[index] = CType.fromJSON(json.values[index], index);
   });
-  return new Property(json.name, json.type, cArray, values);
+  return new Property(json.name, CType, cArray, values);
 };
 
 Property.prototype.fork = function (cArray) {
   var self = this;
-  var fProperty = new Property(this.name, this.ctypeName, cArray);
+  var fProperty = new Property(this.name, this.CType, cArray);
   Object.keys(self.values).forEach(function (index) {
     fProperty.values[index] = self.values[index].fork();
   });
@@ -5178,7 +5356,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":17}],21:[function(require,module,exports){
+},{"./CloudType":18}],22:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5204,13 +5382,19 @@ State.prototype.get = function (name) {
 };
 
 State.prototype.declare = function (name, array) {
-
+  var self = this;
   // CArray or CEntity
   if (array instanceof CArray) {
     array.state = this;
     array.name  = name;
-    return this.arrays[name] = array;
 
+    // special case: find for CSet properties and declare their proxy entities
+//    array.forEachProperty(function (property) {
+//      if (property.cTypeTag === 'CSet') {
+//        self.declare(array.name + '.' + property.name, CEntity.declare([{entryIndex: 'string'}, {element: property.}]))
+//      }
+//    });
+    return this.arrays[name] = array;
   }
   // global (CloudType) => create proxy CArray
   if (typeof array.prototype !== 'undefined' && array.prototype instanceof CloudType) {
@@ -5407,7 +5591,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":9,"./CEntity":12,"./CloudType":17,"util":23}],22:[function(require,module,exports){
+},{"./CArray":9,"./CEntity":12,"./CloudType":18,"util":24}],23:[function(require,module,exports){
 
 
 //
@@ -5625,7 +5809,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6170,5 +6354,5 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":22}]},{},[3])
+},{"_shims":23}]},{},[3])
 ;

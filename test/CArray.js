@@ -5,6 +5,7 @@ var Properties  = require('../shared/Properties');
 var Property    = require('../shared/Property');
 var CloudType   = require('../shared/CloudType');
 var CInt        = require('./extensions/CInt');
+var CString     = require('./extensions/CString');
 var should      = require('should');
 var stubs       = require('./stubs');
 var util        = require('util');
@@ -129,10 +130,10 @@ describe('CArray', function () {
       array.forEachProperty(function (property) {
         property.should.be.an.instanceof(Property);
         if (property.name === "toBuy")
-          property.ctypeName.should.equal("CInt");
+          property.CType.should.equal(CInt);
 
         if (property.name === "shop")
-          property.ctypeName.should.equal("CString");
+          property.CType.should.equal(CString);
        ctr++;
       });
       ctr.should.equal(2);

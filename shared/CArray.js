@@ -5,6 +5,8 @@ var Properties    = require('./Properties');
 var CArrayEntry   = require('./CArrayEntry');
 var CArrayQuery   = require('./CArrayQuery');
 
+var CSet = require('./CSet');
+
 var util          = require('util');
 
 module.exports = CArray;
@@ -23,8 +25,8 @@ function CArray(indexes, properties) {
 CArray.declare = function (indexDeclarations, propertyDeclarations) {
   var carray = new CArray(indexDeclarations);
   Object.keys(propertyDeclarations).forEach(function (propName) {
-    var cTypeName = propertyDeclarations[propName];
-    carray.addProperty(new Property(propName, cTypeName, carray));
+    var cType = propertyDeclarations[propName];
+    carray.addProperty(new Property(propName, cType, carray));
   });
   return carray;
 };

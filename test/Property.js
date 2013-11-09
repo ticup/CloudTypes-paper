@@ -11,20 +11,20 @@ var stubs     = require('./stubs');
 describe('Property state independent operations', function () {
   var indexes, property, cArray, cArray2, state, name;
   var propName = "propertyName";
-  var ctypeName =  "CInt";
+  var CType =  CInt;
 
   beforeEach(function () {
     state = new State();
     var props = {};
-    props[propName] = ctypeName;
+    props[propName] = CType;
     cArray = CArray.declare([], props);
     state.declare("Customer", cArray);
     name = state.arrays.Customer.properties.properties[propName];
   });
 
-  describe('#new(name, ctypeName, cArray)', function () {
+  describe('#new(name, CType, cArray)', function () {
     cArray2   = new CArray([], {});
-    property = new Property(propName, ctypeName, cArray2);
+    property = new Property(propName, CType, cArray2);
 
     it('should create a new Property object', function () {
       should.exist(property);
@@ -38,9 +38,9 @@ describe('Property state independent operations', function () {
       property.should.have.property('indexes');
       property.indexes.should.equal(cArray2.indexes);
     });
-    it('should have a ctypeName property', function () {
-      property.should.have.property('ctypeName');
-      property.ctypeName.should.equal(ctypeName);
+    it('should have a CType property', function () {
+      property.should.have.property('CType');
+      property.CType.should.equal(CType);
 
     });
     it('should have a values property', function () {
@@ -102,7 +102,7 @@ describe('Property state independent operations', function () {
       json.should.have.property('type');
       json.should.have.property('values');
       json.name.should.equal(propName);
-      json.type.should.equal(ctypeName);
+      json.type.should.eql(CType.toJSON());
       json.values.should.be.an.instanceof(Object);
     });
 

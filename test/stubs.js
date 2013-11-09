@@ -37,7 +37,7 @@ exports.groceryUnchanged = {
   properties  : [
     {
       name: 'toBuy',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {
         'Apples'  : cint.toJSON(),
         'Cows'    : cint1.toJSON(),
@@ -58,7 +58,7 @@ exports.productUnchanged = {
   properties  : [
     {
       name: 'name',
-      type: 'CString',
+      type: { tag: 'CString' },
       values: {
         '1': cstring.toJSON(),
         '3': cstring1.toJSON(),
@@ -68,7 +68,7 @@ exports.productUnchanged = {
     },
     {
       name: 'price',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {
         '1': cint1.toJSON(),
         '2': cint3.toJSON()
@@ -87,7 +87,7 @@ exports.customerUnchanged = {
   properties  : [
     {
       name: 'name',
-      type: 'CString',
+      type: { tag: 'CString' },
       values: {
         'Customer:0#0': cstring.toJSON()
       }
@@ -107,14 +107,14 @@ exports.orderUnchanged = {
   properties  : [
     {
       name: 'product',
-      type: 'CString',
+      type: { tag: 'CString' },
       values: {
         'Order:0#0.Customer:0#0': cstring.toJSON(),
       }
     },
     {
       name: 'quantity',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {
         'Order:0#0.Customer:0#0': cint2.toJSON()
       }
@@ -168,7 +168,7 @@ exports.groceryPoluted = {
   properties  : [
     {
       name: 'toBuy',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {}
     }
   ],
@@ -183,12 +183,12 @@ exports.productPoluted = {
   properties  : [
     {
       name: 'name',
-      type: 'CString',
+      type: { tag: 'CString' },
       values: {}
     },
     {
       name: 'price',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {}
     }
   ],
@@ -204,7 +204,7 @@ exports.groceryChanged = {
   properties  : [
     {
       name: 'toBuy',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {
         'Apples'  : cint.toJSON(),
         'Peers'   : cint.toJSON(),
@@ -225,7 +225,7 @@ exports.productChanged = {
   properties: [
     {
       name  : 'name',
-      type  : 'CString',
+      type  : { tag: 'CString' },
       values: {
         '1': cstring.toJSON(),
         '2': cstring.toJSON(),
@@ -236,7 +236,7 @@ exports.productChanged = {
     },
     {
       name: 'price',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {
         '1': cint1.toJSON(),
         '2': cint3.toJSON()
@@ -255,7 +255,7 @@ exports.customerChanged = {
   properties  : [
     {
       name: 'name',
-      type: 'CString',
+      type: { tag: 'CString' },
       values: {
         'Customer:0#0': cstring.toJSON(),
         'Customer:0#1': cstring.toJSON(),
@@ -282,7 +282,7 @@ exports.orderChanged = {
   properties  : [
     {
       name: 'product',
-      type: 'CString',
+      type: { tag: 'CString' },
       values: {
         'Order:0#0.Customer:0#0': cstring.toJSON(),
         'Order:0#1.Customer:0#0': cstring1.toJSON(),
@@ -295,7 +295,7 @@ exports.orderChanged = {
     },
     {
       name: 'quantity',
-      type: 'CInt',
+      type: { tag: 'CInt' },
       values: {
         'Order:0#0.Customer:0#0': cint2.toJSON(),
         'Order:0#2.Customer:0#1': cint.toJSON(),

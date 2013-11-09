@@ -1,10 +1,16 @@
 var CloudType = require('./CloudType');
 
-function Property(name, ctypeName, cArray, values) {
+function Property(name, CType, cArray, values) {
   this.name = name;
   this.indexes = cArray.indexes;
   this.cArray = cArray;
-  this.ctypeName = ctypeName;
+  this.CType = CType;
+  if (typeof CType === 'string') {
+    this.CType = CloudType.declareFromTag(CType);
+  }
+  if (!CloudType.isCloudType(this.CType)) {
+    throw Error ("Unknown property type in declaration (Must be CloudType (CInt, CString, CSet,...)): " + this.CType);
+  }
   this.values = values || {};
 }
 
@@ -28,7 +34,7 @@ Property.prototype.get = function (indexes) {
     index = this.indexes.get(indexes);
   ctype = this.values[index];
   if (typeof ctype === 'undefined') {
-    ctype = this.values[index] = new (CloudType.fromTag(this.ctypeName))();
+    ctype = this.values[index] = this.CType.newFor(indexes);
   }
   return ctype;
 };
@@ -53,20 +59,21 @@ Property.prototype.toJSON = function () {
   Object.keys(self.values).forEach(function (index) {
     values[index] = self.values[index].toJSON();
   });
-  return { name: this.name, type: this.ctypeName, values: values };
+  return { name: this.name, type: this.CType.toJSON(), values: values };
 };
 
 Property.fromJSON = function (json, cArray) {
   var values = {};
+  var CType = CloudType.fromJSON(json.type);
   Object.keys(json.values).forEach(function (index) {
-    values[index] = CloudType.fromJSON(json.values[index]);
+    values[index] = CType.fromJSON(json.values[index], index);
   });
-  return new Property(json.name, json.type, cArray, values);
+  return new Property(json.name, CType, cArray, values);
 };
 
 Property.prototype.fork = function (cArray) {
   var self = this;
-  var fProperty = new Property(this.name, this.ctypeName, cArray);
+  var fProperty = new Property(this.name, this.CType, cArray);
   Object.keys(self.values).forEach(function (index) {
     fProperty.values[index] = self.values[index].fork();
   });

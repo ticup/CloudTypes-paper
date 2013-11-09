@@ -23,13 +23,19 @@ State.prototype.get = function (name) {
 };
 
 State.prototype.declare = function (name, array) {
-
+  var self = this;
   // CArray or CEntity
   if (array instanceof CArray) {
     array.state = this;
     array.name  = name;
-    return this.arrays[name] = array;
 
+    // special case: find for CSet properties and declare their proxy entities
+//    array.forEachProperty(function (property) {
+//      if (property.cTypeTag === 'CSet') {
+//        self.declare(array.name + '.' + property.name, CEntity.declare([{entryIndex: 'string'}, {element: property.}]))
+//      }
+//    });
+    return this.arrays[name] = array;
   }
   // global (CloudType) => create proxy CArray
   if (typeof array.prototype !== 'undefined' && array.prototype instanceof CloudType) {

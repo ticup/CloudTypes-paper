@@ -12,11 +12,10 @@ State.prototype.init = function (cid, client) {
   this.client   = client;
 };
 
-State.prototype.reinit = function (cid, client, state) {
-  console.log('reiniting');
-  this.cid      = cid;
+State.prototype.reinit = function (client) {
   this.client   = client;
-  this.yieldPull(state);
+  this.pending  = false;
+  this.received = false;
 };
 
 State.prototype.createUID = function (uid) {
@@ -75,7 +74,7 @@ State.prototype.flush = function (callback, timeout) {
   self.applyFork();
   return this;
 };
-},{"../shared/State":20}],2:[function(require,module,exports){
+},{"../shared/State":24}],2:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var State       = require('../shared/State');
 var io          = require('socket.io-client');
 
@@ -85,37 +84,49 @@ module.exports = Client;
 
 function Client() {
   this.initialized = false;
+  this.listeners = {};
 }
 
-Client.prototype.connect = function (host, options, callback) {
+Client.prototype.connect = function (host, options, connected, reconnected) {
   var self = this;
-  if (typeof callback === 'undefined') {
-    callback = options;
+  if (typeof options === 'function') {
+    reconnected = connected;
+    connected = options;
     options  = {};
   }
   options['force new connection'] = options['force new connection'] ? options['force new connection'] : true;
   options['max reconnection attempts'] = options['max reconnection attempts'] ? options ['max reconnection attempts'] : Infinity;
   this.host = host;
   this.options = options;
-  this.callback = callback;
+  this.connected = connected;
+  this.reconnected = reconnected;
 
   this.socket = io.connect(host, options);
-  this.socket.on('init', function (json) {
-    var state = State.fromJSON(json.state);
+  this.socket.on('connect', function () {
 
-    if (self.initialized) {
-      return self.state.reinit(json.cid, self, state);
+    if (typeof self.uid === 'undefined') {
+      console.log('client connected for first time');
+      self.socket.emit('init', function (json) {
+        console.log(json.uid);
+        var state = State.fromJSON(json.state);
+        self.uid = json.uid;
+        self.state = state;
+        self.state.init(json.cid, self);
+        connected(self.state);
+      });
+    } else {
+      console.log("client reconnected");
+      self.state.reinit(self);
+      if (typeof reconnected === 'function') {
+        reconnected(self.state);
+      }
     }
-
-    self.initialized = true;
-    self.state = state;
-    self.state.init(json.cid, self);
-    callback(self.state);
   });
 };
 
 Client.prototype.reconnect = function () {
-  return this.connect(this.host, this.options, this.callback);
+  console.log('reconnecting: ' + this.options);
+  return this.connect(this.host, this.options, this.connected, this.reconnected);
 };
 
 Client.prototype.disconnect = function () {
@@ -126,22 +137,36 @@ Client.prototype.close = function () {
   return this.disconnect();
 };
 
+Client.prototype.unrecognizedClient = function () {
+  alert("Sorry, his client is unrecognized by the server! The server probably restarted and your data is lost... Please refresh.");
+  this.disconnect();
+};
+
 Client.prototype.yieldPush = function (pushState) {
+  var self = this;
   var state = this.state;
-  this.socket.emit('YieldPush', pushState, function (stateJson) {
+  this.socket.emit('YieldPush', {uid: this.uid, state: pushState}, function (error, stateJson) {
+    if (error) {
+      return self.unrecognizedClient();
+    }
     var pullState = State.fromJSON(stateJson);
+    // TODO: with callback like flushpush
     state.yieldPull(pullState);
   });
 };
 
 Client.prototype.flushPush = function (pushState, flushPull) {
+  var self = this;
   var state = this.state;
-  this.socket.emit('FlushPush', pushState, function (stateJson) {
+  this.socket.emit('FlushPush', {uid: this.uid, state: pushState}, function (error, stateJson) {
+    if (error) {
+      return self.unrecognizedClient();
+    }
     var pullState = State.fromJSON(stateJson);
     flushPull(pullState);
   });
 };
-},{"../shared/State":20,"socket.io-client":9}],3:[function(require,module,exports){
+},{"../shared/State":24,"socket.io-client":10}],3:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};var CloudTypeClient = require('./CloudTypeClient');
 var ClientState     = require('./ClientState');
 
@@ -153,6 +178,7 @@ var CEntity         = require('../shared/CEntity');
 var View            = require('./views/View');
 var ListView        = require('./views/ListView');
 var EntryView       = require('./views/EntryView');
+var EditableListView = require('./views/EditableListView');
 
 var CloudTypes = {
   // Client
@@ -163,13 +189,36 @@ var CloudTypes = {
   // Views
   View: View,
   ListView: ListView,
-  EntryView: EntryView
+  EntryView: EntryView,
+  EditableListView: EditableListView
 
 };
 
 global.CloudTypes = CloudTypes;
 module.exports = CloudTypes;
-},{"../shared/CArray":10,"../shared/CEntity":12,"../shared/CInt":14,"../shared/CString":15,"./ClientState":1,"./CloudTypeClient":2,"./views/EntryView":4,"./views/ListView":5,"./views/View":6}],4:[function(require,module,exports){
+},{"../shared/CArray":11,"../shared/CEntity":14,"../shared/CInt":17,"../shared/CString":19,"./ClientState":1,"./CloudTypeClient":2,"./views/EditableListView":4,"./views/EntryView":5,"./views/ListView":6,"./views/View":7}],4:[function(require,module,exports){
+/**
+ * Created by ticup on 06/11/13.
+ */
+var ListView = require('./ListView');
+
+var EditableListView = ListView.extend({
+  edit: function (entry) {
+    this.forEachView(function (view) {
+      if (view.entry.equals(entry)) {
+        view.edit();
+      }
+    });
+  },
+  finishEdit: function () {
+    this.forEachView(function (view) {
+      view.finishEdit();
+    });
+  }
+});
+
+module.exports = EditableListView;
+},{"./ListView":6}],5:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -179,8 +228,8 @@ var View = require('./View');
 /////////////
 var EntryView = View.extend({
   initialize: function () {
-    EntryView.__super__.initialize.call(this);
     defaults(this);
+    EntryView.__super__.initialize.call(this);
     var html = this.html;
     this.entry.forEachKey(function (name, value) {
       html.find('.key-'+name).html(value);
@@ -211,7 +260,7 @@ function defaults(entryView) {
 }
 
 module.exports = EntryView;
-},{"./View":6}],5:[function(require,module,exports){
+},{"./View":7}],6:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -233,7 +282,7 @@ var ListView = View.extend({
     var newViews = {};
 
     // create new views or update existing ones
-    this.produce().forEach(function (item) {
+    this.value().forEach(function (item) {
       var id = item.index();
       var view = views[id];
 
@@ -242,13 +291,18 @@ var ListView = View.extend({
         view.update();
         delete views[id];
 
+        // reposition
+        if (view.position !== ctr) {
+          insertAt(self.html, ctr, view.html);
+        }
+
         // view not present: create, update and insert html in DOM
       } else {
-        view = self.createItemView(item);
+        view = self.createItemView(item, ctr);
         view.update();
         insertAt(self.html, ctr, view.html);
       }
-
+      view.position = ctr++;
       newViews[id] = view;
     });
 
@@ -262,8 +316,25 @@ var ListView = View.extend({
     this.views = newViews;
   },
 
+  getView: function (position) {
+    var result;
+    this.forEachView(function (view) {
+      if (view.position === position) {
+        result = view;
+      }
+    });
+    return result;
+  },
+
   createItemView: function (item) {
     throw Error("ListView.createItemView(item): should be implemented by extending object");
+  },
+
+  forEachView: function (callback) {
+    var views = this.views;
+    Object.keys(views).forEach(function (index) {
+      callback(views[index]);
+    });
   }
 });
 
@@ -272,14 +343,14 @@ var ListView = View.extend({
 
 function insertAt(parent, index, html) {
   console.log('inserting at ' + index + ' ' + html);
-  console.log(html);
+  console.log(parent);
   if (index === 0)
     return parent.prepend(html);
-  parent.find(':nth-child(' + index + ')').after(html);
+  parent.children(':nth-child(' + index + ')').after(html);
 }
 
 module.exports = ListView;
-},{"./View":6}],6:[function(require,module,exports){
+},{"./View":7}],7:[function(require,module,exports){
 /**
  * Created by ticup on 04/11/13.
  */
@@ -344,7 +415,7 @@ View.prototype.initialize = function () {
 };
 
 module.exports = View;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var Buffer=require("__browserify_Buffer").Buffer;
 // Taken from node's assert module, because it sucks
 // and exposes next to nothing useful.
@@ -439,7 +510,7 @@ function objEquiv (a, b) {
   return true;
 }
 
-},{"__browserify_Buffer":58}],8:[function(require,module,exports){
+},{"__browserify_Buffer":62}],9:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2012 TJ Holowaychuk <tj@vision-media.ca>
@@ -1171,7 +1242,7 @@ Assertion.prototype = {
 ('below', 'lessThan');
 
 
-},{"./eql":7,"assert":31,"http":40,"util":36}],9:[function(require,module,exports){
+},{"./eql":8,"assert":35,"http":44,"util":40}],10:[function(require,module,exports){
 /*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
 
 var io = ('undefined' === typeof module ? {} : module.exports);
@@ -5045,13 +5116,17 @@ if (typeof define === "function" && define.amd) {
   define([], function () { return io; });
 }
 })();
-},{}],10:[function(require,module,exports){
-var CloudType   = require('./CloudType');
-var Indexes     = require('./Indexes');
-var Property    = require('./Property');
-var Properties  = require('./Properties');
-var CArrayEntry = require('./CArrayEntry');
-var util        = require('util');
+},{}],11:[function(require,module,exports){
+var CloudType     = require('./CloudType');
+var Indexes       = require('./Indexes');
+var Property      = require('./Property');
+var Properties    = require('./Properties');
+var CArrayEntry   = require('./CArrayEntry');
+var CArrayQuery   = require('./CArrayQuery');
+
+var CSet = require('./CSet');
+
+var util          = require('util');
 
 module.exports = CArray;
 
@@ -5069,8 +5144,8 @@ function CArray(indexes, properties) {
 CArray.declare = function (indexDeclarations, propertyDeclarations) {
   var carray = new CArray(indexDeclarations);
   Object.keys(propertyDeclarations).forEach(function (propName) {
-    var cTypeName = propertyDeclarations[propName];
-    carray.addProperty(new Property(propName, cTypeName, carray));
+    var cType = propertyDeclarations[propName];
+    carray.addProperty(new Property(propName, cType, carray));
   });
   return carray;
 };
@@ -5087,8 +5162,16 @@ CArray.prototype.entries = function (propertyName) {
   return this.properties.get(propertyName).entries();
 };
 
+CArray.prototype.where = function (filter) {
+  return new CArrayQuery(this, filter);
+};
+
 CArray.prototype.getProperty = function (property) {
-  return this.properties.get(property);
+  var result = this.properties.get(property);
+  if (typeof result === 'undefined') {
+    throw Error(this.name + " does not have property " + property);
+  }
+  return result;
 };
 
 CArray.prototype.addProperty = function (property) {
@@ -5120,7 +5203,7 @@ CArray.fromJSON = function (json) {
   cArray.isProxy = json.isProxy;
   return cArray;
 };
-},{"./CArrayEntry":11,"./CloudType":16,"./Indexes":17,"./Properties":18,"./Property":19,"util":36}],11:[function(require,module,exports){
+},{"./CArrayEntry":12,"./CArrayQuery":13,"./CSet":18,"./CloudType":20,"./Indexes":21,"./Properties":22,"./Property":23,"util":40}],12:[function(require,module,exports){
 var Indexes = require('./Indexes');
 
 module.exports = CArrayEntry;
@@ -5141,15 +5224,19 @@ CArrayEntry.prototype.forEachProperty = function (callback) {
   });
 };
 
-CArrayEntry.prototype.forEachIndex = function (callback) {
-  return this.indexes.forEach(callback);
-};
-
 CArrayEntry.prototype.forEachKey = function (callback) {
   for (var i = 0; i<this.indexes.length; i++) {
     callback(this.cArray.indexes.getName(i), this.indexes[i]);
   }
 };
+
+
+
+CArrayEntry.prototype.forEachIndex = function (callback) {
+  return this.indexes.forEach(callback);
+};
+
+
 
 CArrayEntry.prototype.key = function (name) {
   var position = this.cArray.indexes.getPositionOf(name);
@@ -5174,12 +5261,97 @@ CArrayEntry.prototype.deleted = function () {
 CArrayEntry.prototype.index = function () {
   return Indexes.createIndex(this.indexes);
 };
-},{"./Indexes":17}],12:[function(require,module,exports){
+
+CArrayEntry.prototype.equals = function (entry) {
+  if (this.cArray !== entry.cArray)
+    return false;
+
+  for (var i = 0; i<this.indexes.length; i++) {
+    if (this.indexes[i] !== entry.indexes[i])
+      return false;
+  }
+  return true;
+};
+},{"./Indexes":21}],13:[function(require,module,exports){
+/**
+ * Created by ticup on 06/11/13.
+ */
+
+/**
+ * Created by ticup on 07/11/13.
+ */
+module.exports = CArrayQuery;
+
+function CArrayQuery(cArray, filter) {
+  this.cArray = cArray;
+  this.sumFilter = filter;
+  this.orderProperty = false;
+  this.orderDir = false;
+}
+
+CArrayQuery.prototype.all = function () {
+  var self = this;
+  var entities = [];
+  Object.keys(self.cArray.states).forEach(function (index) {
+    if (self.cArray.exists(index) && (typeof self.sumFilter === 'undefined' || self.sumFilter(self.cArray.get(index))))
+      entities.push(self.cArray.get(index));
+  });
+  if (self.orderProperty) {
+    var property = self.cArray.get(self.orderProperty);
+    if (typeof property === 'undefined') {
+      throw new Error("orderBy only allowed on properties for the moment");
+    }
+    return entities.sort(function (entry1, entry2) {
+      return entry1.get(self.orderProperty).compare(entry2.get(self.orderProperty), (self.orderDir === "desc"));
+    });
+  }
+  return entities;
+};
+
+CArrayQuery.prototype.entries = function (propertyName) {
+  var self = this;
+  var filtered = [];
+  var array = this.cArray.entries(propertyName);
+  if (typeof self.sumFilter === 'undefined') {
+    filtered = array;
+  } else {
+    array.forEach(function (entry) {
+      if (self.sumFilter(entry))
+        filtered.push(entry);
+    });
+  }
+
+  if (self.orderProperty) {
+    var property = self.cArray.get(self.orderProperty);
+    if (typeof property === 'undefined') {
+      throw new Error("orderBy only allowed on properties for the moment");
+    }
+    return filtered.sort(function (entry1, entry2) {
+      return entry1.get(self.orderProperty).compare(entry2.get(self.orderProperty), (self.orderDir === "desc"));
+    });
+  }
+  return filtered;
+};
+
+
+CArrayQuery.prototype.orderBy = function (propertyName, dir) {
+  this.orderProperty = propertyName;
+  this.orderDir = dir;
+  return this;
+};
+
+CArrayQuery.prototype.where = function (newFilter) {
+  var sumFilter = this.sumFilter;
+  this.sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
+  return this;
+};
+},{}],14:[function(require,module,exports){
 var CArray     = require('./CArray');
 var Indexes    = require('./Indexes');
 var Properties = require('./Properties');
 var Property   = require('./Property');
 var CEntityEntry = require('./CEntityEntry');
+var CEntityQuery = require('./CEntityQuery');
 
 module.exports = CEntity;
 
@@ -5195,6 +5367,8 @@ function CEntity(indexes, properties, states) {
 }
 CEntity.prototype = Object.create(CArray.prototype);
 
+CEntity.OK = OK;
+CEntity.DELETED = DELETED;
 
 CEntity.declare = function (indexDeclarations, propertyDeclarations) {
   var cEntity = new CEntity([{uid: 'string'}].concat(indexDeclarations));
@@ -5210,8 +5384,15 @@ CEntity.prototype.create = function (indexes) {
   indexes = (typeof indexes === 'undefined') ? [] : indexes;
   var uid = this.name + ":" + this.state.createUID(this.uid);
   this.uid += 1;
-  this.setCreated(uid);
+  var index = Indexes.createIndex([uid].concat(indexes));
+  this.setCreated(index);
   return this.get([uid].concat(indexes));
+};
+
+CEntity.prototype.delete = function (entry) {
+  console.log("DELETING " + entry.indexes);
+  this.setDeleted(Indexes.createIndex(entry.indexes));
+  this.state.propagate();
 };
 
 CEntity.prototype.get = function (indexes) {
@@ -5235,22 +5416,7 @@ CEntity.prototype.setMax = function (entity1, entity2, index) {
 };
 
 CEntity.prototype.where = function (filter) {
-  var self = this;
-  var sumFilter = filter;
-  return {
-    all: function () {
-      var entities = [];
-      Object.keys(self.states).forEach(function (index) {
-        if (self.states[index] === OK && sumFilter(self.get(index)))
-          entities.push(self.get(index));
-      });
-      return entities;
-    },
-    where: function (newFilter) {
-      sumFilter = function (index) { return (sumFilter(index) && newFilter(index)); };
-      return this;
-    }
-  }
+  return new CEntityQuery(this, filter);
 };
 
 CEntity.prototype.all = function () {
@@ -5271,11 +5437,7 @@ CEntity.prototype.setCreated = function (index) {
   this.states[index] = OK;
 };
 
-CEntity.prototype.delete = function (entry) {
-  console.log("DELETING " + entry.indexes);
-  this.setDeleted(entry.indexes[0]);
-  this.state.propagate();
-};
+
 
 CEntity.prototype.exists = function (idx) {
   return (typeof this.states[idx] !== 'undefined' && this.states[idx] === OK);
@@ -5314,69 +5476,130 @@ CEntity.prototype.toJSON = function () {
   };
 };
 
-},{"./CArray":10,"./CEntityEntry":13,"./Indexes":17,"./Properties":18,"./Property":19}],13:[function(require,module,exports){
-var Indexes = require('./Indexes');
+},{"./CArray":11,"./CEntityEntry":15,"./CEntityQuery":16,"./Indexes":21,"./Properties":22,"./Property":23}],15:[function(require,module,exports){
+var Indexes     = require('./Indexes');
+var CArrayEntry = require('./CArrayEntry');
 
 module.exports = CEntityEntry;
 
-function CEntityEntry(cEntity, indexes) {
-  this.cEntity = cEntity;
-  this.indexes = Indexes.getIndexes(indexes, cEntity);
+function CEntityEntry(cArray, indexes) {
+  CArrayEntry.call(this, cArray, indexes);
+//  this.cArray = cArray;
+//  this.indexes = Indexes.getIndexes(indexes, cArray);
 }
-//CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
+
+CEntityEntry.prototype = Object.create(CArrayEntry.prototype);
 
 
 CEntityEntry.prototype.get = function (property) {
-  return this.cEntity.getProperty(property).saveGet(this.indexes);
-};
-
-CEntityEntry.prototype.key = function (name) {
-  var position = this.cEntity.indexes.getPositionOf(name);
-  if (position === -1)
-    return null;
-  return this.indexes[position];
+  return this.cArray.getProperty(property).saveGet(this.indexes);
 };
 
 CEntityEntry.prototype.forEachIndex = function (callback) {
-  var self = this;
-  var i = 0;
-  Indexes.getIndexes(this.indexes).forEach(function (index) {
-    var type = self.cEntity.indexes.getType(i++);
-    callback(type, index);
-  });
+  return this.indexes.slice(1).forEach(callback);
+};
+
+CEntityEntry.prototype.forEachKey = function (callback) {
+  for (var i = 1; i<this.indexes.length; i++) {
+    callback(this.cArray.indexes.getName(i), this.indexes[i]);
+  }
 };
 
 CEntityEntry.prototype.deleted = function () {
-  return (this.cEntity.state.deleted(this.indexes, this.cEntity));
+  return (this.cArray.state.deleted(this.indexes, this.cArray));
 };
 
 CEntityEntry.prototype.delete = function () {
-  return this.cEntity.delete(this);
+  return this.cArray.delete(this);
 };
-},{"./Indexes":17}],14:[function(require,module,exports){
+
+CEntityEntry.prototype.toString = function () {
+  return Indexes.createIndex(this.indexes);
+};
+},{"./CArrayEntry":12,"./Indexes":21}],16:[function(require,module,exports){
+/**
+ * Created by ticup on 07/11/13.
+ */
+
+var CArrayQuery = require("./CArrayQuery");
+
+module.exports = CEntityQuery;
+
+function CEntityQuery(cEntity, filter) {
+  CArrayQuery.call(this, cEntity, filter);
+}
+CEntityQuery.prototype = Object.create(CArrayQuery.prototype);
+
+CEntityQuery.prototype.all = function () {
+  var self = this;
+  var entities = [];
+  Object.keys(self.cArray.states).forEach(function (index) {
+    if (self.cArray.exists(index) && (typeof self.sumFilter === 'undefined' || self.sumFilter(self.cArray.get(index))))
+      entities.push(self.cArray.get(index));
+  });
+  if (self.orderProperty) {
+    var property = self.cArray.get(self.orderProperty);
+    if (typeof property === 'undefined') {
+      throw new Error("orderBy only allowed on properties for the moment");
+    }
+    return entities.sort(function (entry1, entry2) {
+      return entry1.get(self.orderProperty).compare(entry2.get(self.orderProperty), (self.orderDir === "desc"));
+    });
+  }
+  return entities;
+};
+},{"./CArrayQuery":13}],17:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
-module.exports = CInt;
+
+exports.CInt = CInt;
+exports.Declaration = CIntDeclaration;
 
 
+// CIntDeclaration: function that allows the user to declare a property of type CInt
+// see CSet as to why this exists (parametrized declarations)
+function CIntDeclaration() { }
+CIntDeclaration.declare = function () {
+  return CInt;
+};
+CIntDeclaration.fromJSON = function () {
+  return CInt;
+};
+
+
+// register this declaration as usable (will also allow to create CInt with CloudType.fromJSON())
+CIntDeclaration.tag = "CInt";
+CloudType.register(CIntDeclaration);
+
+
+// Actual CInt object of which an instance represents a variable of which the property is defined with CIntDeclaration
 function CInt(base, offset, isSet) {
   this.base = base || 0;
   this.offset = offset || 0;
   this.isSet = isSet || false;
 }
-
 // put CloudType in prototype chain.
 CInt.prototype = Object.create(CloudType.prototype);
-CInt.prototype.tag = "CInt";
 
-// register for CloudType.fromJSON 
-CloudType.register(CInt);
+// Create a new instance of the declared CInt for given entryIndex
+CInt.prototype.newFor = function (entryIndex) {
+  return new CInt();
+};
+
+// Puts the declared type CInt into json representation
+CInt.toJSON = function () {
+  return { tag: CIntDeclaration.tag };
+};
+
+
+// Retrieves an instance of a declared type CInt from json
+// Not the complement of CInt.toJSON, but complement of CInt.prototype._toJSON!!
 CInt.fromJSON = function (json) {
   return new CInt(json.base, json.offset, json.isSet);
 };
 
-// used by the toJSON method of the CloudType prototype.
-CInt.prototype._toJSON = function () {
+// Puts an instance of a declared type CInt to json
+CInt.prototype.toJSON = function () {
   return {
     base: this.base,
     offset: this.offset,
@@ -5439,30 +5662,178 @@ CInt.prototype.replaceBy = function (cint) {
 CInt.prototype.isDefault = function () {
   return (this.get() === 0);
 };
-},{"./CloudType":16,"util":36}],15:[function(require,module,exports){
+
+CInt.prototype.compare = function (cint, reverse) {
+  return ((reverse ? -1 : 1) * (this.get() - cint.get()));
+};
+},{"./CloudType":20,"util":40}],18:[function(require,module,exports){
+/**
+ * Created by ticup on 08/11/13.
+ */
+var CloudType = require('./CloudType');
+module.exports = CSetDeclaration;
+
+function CSetDeclaration() { }
+// CSetDeclaration: Declare a parametrized CSet type for a property
+CSetDeclaration.declare = function (elementType) {
+  function CSet(entryIndex) {
+    this.entryIndex = entryIndex;
+    this.elementType = elementType;
+    //this.cSetEntity should be set by State!
+  }
+
+  CSet.newFor = function (entryIndex) {
+    return new CSet(entryIndex);
+  };
+
+  // Puts the declared (parametrized) CSet into json
+  CSet.toJSON = function () {
+    return { tag: CSetDeclaration.tag, elementType: elementType };
+  };
+
+  // Retrieves an instance of a declared (parametrized) CSet from json
+  CSet.fromJSON = function (json, entryIndex) {
+    return new CSet(entryIndex);
+  };
+
+  CSet.prototype = CSetPrototype;
+  return CSet;
+}
+
+// called by CloudType to initialize the parametrized CSet for a property
+CSetDeclaration.fromJSON = function (json) {
+  return CSetDeclaration(json.elementType);
+};
+
+// register this declaration as usable (will also allow to create CSet with CloudType.fromJSON())
+CSetDeclaration.tag = "CSet";
+CloudType.register(CSetDeclaration);
+
+
+
+var CSetPrototype = Object.create(CloudType.prototype);
+
+
+// Operations for the parametrized CSets
+
+// don't need to save anything for a particular CSet instance of a property:
+// The info of the particular set is saved in a dedicated CSetEntity
+CSetPrototype.toJSON = function () {
+  return {  };
+};
+
+// semantic operations (all delegated to the dedicated entity)
+CSetPrototype.add = function (element) {
+  return this.proxyEntity.create(this.entryIndex, element);
+};
+
+CSetPrototype.contains = function (element) {
+  var entryIndex = this.entryIndex;
+  var elementType = this.elementType;
+  return (this.proxyEntity
+      .where(function (entry) {
+        return isEntryForElement(entry, entryIndex, elementType, element);
+      }).all().length !== 0);
+};
+
+CSetPrototype.remove = function (element) {
+  var entryIndex = this.entryIndex;
+  var elementType = this.elementType;
+  this.proxyEntity
+      .where(function (entry) {
+        return isEntryForElement(entry, entryIndex, elementType, element);
+      }).all().forEach(function (entry) {
+        entry.delete();
+      });
+};
+
+CSetPrototype.get = function () {
+  return this.proxyEntity.all();
+};
+
+function isEntryForElement(entry, entryIndex, elementType, element) {
+  return (entry.key('entryIndex') === entryIndex &&
+      (elementType === 'string' || elementType === 'int') ?
+      (entry.key('element') === element) :
+      (entry.key('element').equals(element)));
+}
+
+// Defining _join(cint, target) provides the join and joinIn methods
+// by the CloudType prototype.
+CSetPrototype._join = function (cset, target) {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+};
+
+CSetPrototype.fork = function () {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+  return this;
+};
+
+CSetPrototype.applyFork = function () {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+  return this;
+};
+
+CSetPrototype.replaceBy = function (cset) {
+  // do nothing (everything happens 'automatically' through the cEntityProxy
+};
+
+CSetPrototype.isDefault = function () {
+  return (this.get().length !== 0);
+};
+
+CSetPrototype.compare = function (cset, reverse) {
+  return ((reverse ? -1 : 1) * (this.get().length - cset.get().length));
+};
+},{"./CloudType":20}],19:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var util = require('util');
-module.exports = CString;
+
+exports.CString = CString;
+exports.Declaration = CStringDeclaration;
 
 
+// CIntDeclaration: function that allows the user to declare a property of type CInt
+// see CSet as to why this exists (parametrized declarations)
+function CStringDeclaration() { }
+
+CStringDeclaration.declare = function () {
+  return CString;
+}
+CStringDeclaration.fromJSON = function () {
+  return CString;
+}
+
+// register this declaration as usable (will also allow to create CString with CloudType.fromJSON())
+CStringDeclaration.tag = "CString";
+CloudType.register(CStringDeclaration);
+
+
+// Actual CString object of which an instance represents a variable of which the property is defined with CStringDeclaration
 function CString(value, written, cond) {
   this.value   = value   || '';
   this.written = written || false;
   this.cond    = cond    || false;
 }
-
 // put CloudType in prototype chain.
 CString.prototype = Object.create(CloudType.prototype);
-CString.prototype.tag = "CString";
 
-// register for CloudType.fromJSON 
-CloudType.register(CString);
+// Create a new instance of the declared CString for given entryIndex
+CString.prototype.newFor = function (entryIndex) {
+  return new CString();
+};
+
+CString.toJSON = function () {
+  return { tag: CStringDeclaration.tag };
+};
+
 CString.fromJSON = function (json) {
   return new CString(json.value, json.written, json.cond);
 };
 
-// used by the toJSON method of the CloudType prototype.
-CString.prototype._toJSON = function () {
+
+// Puts the declared type CString into json representation
+CString.prototype.toJSON = function () {
   return {
     value: this.value,
     written: this.written,
@@ -5551,30 +5922,31 @@ CString.prototype.replaceBy = function (cstring) {
 CString.prototype.isDefault = function () {
   return (this.get() === '');
 };
-},{"./CloudType":16,"util":36}],16:[function(require,module,exports){
+
+CString.prototype.compare = function (cstring, reverse) {
+  return ((reverse ? -1 : 1) * (this.get().localeCompare(cstring.get())));
+};
+},{"./CloudType":20,"util":40}],20:[function(require,module,exports){
 module.exports = CloudType;
 
 function CloudType() {}
 
 CloudType.types = {};
 
-CloudType.register = function (type) {
-  CloudType.types[type.prototype.tag] = type;
+CloudType.register = function (typeDeclaration) {
+  CloudType.types[typeDeclaration.tag] = typeDeclaration;
 };
 
 CloudType.fromTag = function (tag) {
   return CloudType.types[tag];
 };
 
-CloudType.fromJSON = function (json) {
-  return CloudType.types[json.type].fromJSON(json.info);
+CloudType.isCloudType = function (CType) {
+  return (typeof CloudType.types[CType.tag] !== 'undefined');
 };
 
-CloudType.prototype.toJSON = function () {
-  return {
-    type: this.tag,
-    info: this._toJSON()
-  };
+CloudType.fromJSON = function (json, index) {
+  return CloudType.fromTag(json.tag).fromJSON(json, index);
 };
 
 CloudType.prototype.join = function (cint) {
@@ -5584,7 +5956,7 @@ CloudType.prototype.join = function (cint) {
 CloudType.prototype.joinIn = function (cint) {
   this._join(cint, cint);
 };
-},{}],17:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 function Indexes(indexes) {
   var self = this;
   this.names  = [];
@@ -5601,6 +5973,7 @@ function Indexes(indexes) {
 
 Indexes.prototype.forEach = function (callback) {
   for (var i = 0; i<this.names.length; i++) {
+    console.log('type: ' + this.types[i]);
     callback(this.names[i], this.types[i]);
   }
 };
@@ -5630,23 +6003,27 @@ Indexes.prototype.get = function (indexes) {
 Indexes.createIndex = function createIndex(indexes) {
   if (typeof indexes === 'string')
     return indexes;
-  return indexes.join(".");
+  return indexes.map(function (val) { return val.toString(); }).join(".");
 };
 
 Indexes.getIndexes = function getIndexes(index, cArray) {
-  if (typeof index === 'string') {
-    var index = index.split(".");
-    for (var i = 0; i<index.length; i++) {
-      var type = cArray.indexes.getType(i);
-      if (type === 'string') {
-        break;
-      }
-      if (type === 'int') {
-        index[i] = parseInt(index[i], 10);
-        break;
-      }
-      index[i] = cArray.state.get(type).get(index[i]);
+  if (typeof index === 'string')
+    index = index.split(".");
+
+  for (var i = 0; i<index.length; i++) {
+    var type = cArray.indexes.getType(i);
+    if (type === 'string') {
+      continue;
     }
+    if (type === 'int') {
+      index[i] = parseInt(index[i], 10);
+      continue;
+    }
+
+    // If entry is given, just store index!
+    if (typeof index[i] !== 'string')
+      index[i] = index[i].index();
+
   }
   return index;
 };
@@ -5674,7 +6051,7 @@ Indexes.prototype.fork = function () {
 };
 
 module.exports = Indexes;
-},{}],18:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 var Property = require('./Property');
 
 function Properties(properties) {
@@ -5722,14 +6099,20 @@ Properties.prototype.fork = function (cArray) {
 };
 
 module.exports = Properties;
-},{"./Property":19}],19:[function(require,module,exports){
+},{"./Property":23}],23:[function(require,module,exports){
 var CloudType = require('./CloudType');
 
-function Property(name, ctypeName, cArray, values) {
+function Property(name, CType, cArray, values) {
   this.name = name;
   this.indexes = cArray.indexes;
   this.cArray = cArray;
-  this.ctypeName = ctypeName;
+  this.CType = CType;
+  if (typeof CType === 'string') {
+    this.CType = CloudType.fromTag(CType);
+  }
+  if (!CloudType.isCloudType(this.CType)) {
+    throw Error ("Unknown property type in declaration (Must be CloudType (CInt, CString, CSet,...)): " + this.CType);
+  }
   this.values = values || {};
 }
 
@@ -5753,7 +6136,7 @@ Property.prototype.get = function (indexes) {
     index = this.indexes.get(indexes);
   ctype = this.values[index];
   if (typeof ctype === 'undefined') {
-    ctype = this.values[index] = new (CloudType.fromTag(this.ctypeName))();
+    ctype = this.values[index] = CType.newFor(indexes);
   }
   return ctype;
 };
@@ -5778,20 +6161,21 @@ Property.prototype.toJSON = function () {
   Object.keys(self.values).forEach(function (index) {
     values[index] = self.values[index].toJSON();
   });
-  return { name: this.name, type: this.ctypeName, values: values };
+  return { name: this.name, type: this.CType.toJson(), values: values };
 };
 
 Property.fromJSON = function (json, cArray) {
   var values = {};
+  var CType = CloudType.fromJSON(json.type);
   Object.keys(json.values).forEach(function (index) {
-    values[index] = CloudType.fromJSON(json.values[index]);
+    values[index] = CType.fromJSON(json.values[index], index);
   });
-  return new Property(json.name, json.type, cArray, values);
+  return new Property(json.name, CType, cArray, values);
 };
 
 Property.prototype.fork = function (cArray) {
   var self = this;
-  var fProperty = new Property(this.name, this.ctypeName, cArray);
+  var fProperty = new Property(this.name, this.CType, cArray);
   Object.keys(self.values).forEach(function (index) {
     fProperty.values[index] = self.values[index].fork();
   });
@@ -5799,7 +6183,7 @@ Property.prototype.fork = function (cArray) {
 };
 
 module.exports = Property;
-},{"./CloudType":16}],20:[function(require,module,exports){
+},{"./CloudType":20}],24:[function(require,module,exports){
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
@@ -5825,13 +6209,19 @@ State.prototype.get = function (name) {
 };
 
 State.prototype.declare = function (name, array) {
-
+  var self = this;
   // CArray or CEntity
   if (array instanceof CArray) {
     array.state = this;
     array.name  = name;
-    return this.arrays[name] = array;
 
+    // special case: find for CSet properties and declare their proxy entities
+//    array.forEachProperty(function (property) {
+//      if (property.cTypeTag === 'CSet') {
+//        self.declare(array.name + '.' + property.name, CEntity.declare([{entryIndex: 'string'}, {element: property.}]))
+//      }
+//    });
+    return this.arrays[name] = array;
   }
   // global (CloudType) => create proxy CArray
   if (typeof array.prototype !== 'undefined' && array.prototype instanceof CloudType) {
@@ -5843,7 +6233,6 @@ State.prototype.declare = function (name, array) {
     return this.arrays[name] = array;
   }
   // Either declare CArray (CEntity is also a CArray) or CloudType, nothing else.
-  console.log(require('util').inspect(array));
   throw "Need a CArray or CloudType to declare: " + array;
 };
 
@@ -5911,14 +6300,12 @@ State.prototype.propagate = function () {
   var self = this;
   var changed = false;
   this.forEachEntity(function (entity) {
-    entity.forEachProperty(function (property) {
-      property.forEachIndex(function (index) {
-        if (entity.exists(index) && self.deleted(index, entity)) {
-          entity.setDeleted(index);
-        }
-      })
-    })
-  })
+    entity.forEachState(function (index) {
+      if (entity.exists(index) && self.deleted(index, entity)) {
+        entity.setDeleted(index);
+      }
+    });
+  });
 };
 
 State.prototype.deleted = function (index, entity) {
@@ -5926,14 +6313,18 @@ State.prototype.deleted = function (index, entity) {
   // Entity
   if (typeof entity !== 'undefined' && entity instanceof CEntity) {
     var entry = entity.get(index);
+//    console.log(index + ' of ' + entity.name + ' deleted ?');
+
     if (entity.deleted(index))
       return true;
     var del = false;
-    entry.forEachIndex(function (index) {
-      if (typeof index !== 'int' && typeof index !== 'string') {
-        if (index.deleted())
-          del = true;
-      }
+    entry.forEachKey(function (name, value) {
+      var type = entity.indexes.getTypeOf(name);
+      if (typeof type !== 'undefined')
+        type = self.get(type);
+//      console.log('index deleted? ' + value + " of type " + type);
+      if (self.deleted(value, type))
+        del = true;
     });
     return del;
   }
@@ -5942,9 +6333,9 @@ State.prototype.deleted = function (index, entity) {
   if (typeof entity !== 'undefined' && entity instanceof CArray) {
     var del = false;
     var entry = entity.get(index);
-    entry.forEachIndex(function (idx, value, type) {
-      var entity = self.get(type);
-      if (self.deleted(idx, entity))
+    entry.forEachKey(function (name, value) {
+      var type = entity.indexes.getTypeOf(name);
+      if (self.deleted(name, type))
         del = true;
     });
     return del;
@@ -6027,7 +6418,7 @@ State.prototype.replaceBy = function (state) {
 State.prototype.print = function () {
   console.log(require('util').inspect(this.toJSON(), {depth: null}));
 };
-},{"./CArray":10,"./CEntity":12,"./CloudType":16,"util":36}],21:[function(require,module,exports){
+},{"./CArray":11,"./CEntity":14,"./CloudType":20,"util":40}],25:[function(require,module,exports){
 
 // load normal client file
 var main = require('../../client/main');
@@ -6036,12 +6427,12 @@ var main = require('../../client/main');
 exports.CInt     = require('../extensions/CInt');
 exports.CString  = require('../extensions/CString');
 exports.State    = require('../extensions/State');
-},{"../../client/main":3,"../extensions/CInt":22,"../extensions/CString":23,"../extensions/State":24}],22:[function(require,module,exports){
+},{"../../client/main":3,"../extensions/CInt":26,"../extensions/CString":27,"../extensions/State":28}],26:[function(require,module,exports){
 // test/extensions/CInt.js
 //
 // Extends the CInt CloudType with the necessary test
 // functionalities for the tests. 
-var CInt = require('../../shared/CInt');
+var CInt = require('../../shared/CInt').CInt;
 var should = require('should');
 
 module.exports = CInt;
@@ -6075,12 +6466,12 @@ CInt.prototype.isEqual = function (cint) {
 CInt.prototype.isConsistent = function (cint) {
   this.get().should.equal(cint.get());
 };
-},{"../../shared/CInt":14,"should":8}],23:[function(require,module,exports){
+},{"../../shared/CInt":17,"should":9}],27:[function(require,module,exports){
 // test/extensions/CString.js
 //
 // Extends the CString CloudType with the necessary test
 // functionalities for the tests. 
-var CString = require('../../shared/CString');
+var CString = require('../../shared/CString').CString;
 var should  = require('should');
 var util    = require('util');
 
@@ -6133,7 +6524,7 @@ CString.prototype.isConsistent = function (cstring) {
 //  console.log(this.get() + " =? " + cint.get());
   this.get().should.equal(cstring.get());
 };
-},{"../../shared/CString":15,"should":8,"util":36}],24:[function(require,module,exports){
+},{"../../shared/CString":19,"should":9,"util":40}],28:[function(require,module,exports){
 var State = require('../../shared/State');
 var should = require('should');
 
@@ -6246,7 +6637,7 @@ State.prototype.isConsistent = function (state) {
     });
   });
 };
-},{"../../shared/State":20,"should":8}],25:[function(require,module,exports){
+},{"../../shared/State":24,"should":9}],29:[function(require,module,exports){
 
 
 //
@@ -6464,7 +6855,7 @@ if (typeof Object.getOwnPropertyDescriptor === 'function') {
   exports.getOwnPropertyDescriptor = valueObject;
 }
 
-},{}],26:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6537,7 +6928,7 @@ function onend() {
   timers.setImmediate(shims.bind(this.end, this));
 }
 
-},{"_shims":25,"_stream_readable":28,"_stream_writable":30,"timers":35,"util":36}],27:[function(require,module,exports){
+},{"_shims":29,"_stream_readable":32,"_stream_writable":34,"timers":39,"util":40}],31:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -6580,7 +6971,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"_stream_transform":29,"util":36}],28:[function(require,module,exports){
+},{"_stream_transform":33,"util":40}],32:[function(require,module,exports){
 var process=require("__browserify_process");// Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7501,7 +7892,7 @@ function endReadable(stream) {
   }
 }
 
-},{"__browserify_process":59,"_shims":25,"buffer":38,"events":32,"stream":33,"string_decoder":34,"timers":35,"util":36}],29:[function(require,module,exports){
+},{"__browserify_process":63,"_shims":29,"buffer":42,"events":36,"stream":37,"string_decoder":38,"timers":39,"util":40}],33:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -7707,7 +8098,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"_stream_duplex":26,"util":36}],30:[function(require,module,exports){
+},{"_stream_duplex":30,"util":40}],34:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8077,7 +8468,7 @@ function endWritable(stream, state, cb) {
   state.ended = true;
 }
 
-},{"buffer":38,"stream":33,"timers":35,"util":36}],31:[function(require,module,exports){
+},{"buffer":42,"stream":37,"timers":39,"util":40}],35:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8394,7 +8785,7 @@ assert.doesNotThrow = function(block, /*optional*/message) {
 };
 
 assert.ifError = function(err) { if (err) {throw err;}};
-},{"_shims":25,"util":36}],32:[function(require,module,exports){
+},{"_shims":29,"util":40}],36:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8675,7 +9066,7 @@ EventEmitter.listenerCount = function(emitter, type) {
     ret = emitter._events[type].length;
   return ret;
 };
-},{"util":36}],33:[function(require,module,exports){
+},{"util":40}],37:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8804,7 +9195,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"_stream_duplex":26,"_stream_passthrough":27,"_stream_readable":28,"_stream_transform":29,"_stream_writable":30,"events":32,"util":36}],34:[function(require,module,exports){
+},{"_stream_duplex":30,"_stream_passthrough":31,"_stream_readable":32,"_stream_transform":33,"_stream_writable":34,"events":36,"util":40}],38:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -8997,7 +9388,7 @@ function base64DetectIncompleteChar(buffer) {
   return incomplete;
 }
 
-},{"buffer":38}],35:[function(require,module,exports){
+},{"buffer":42}],39:[function(require,module,exports){
 try {
     // Old IE browsers that do not curry arguments
     if (!setTimeout.call) {
@@ -9116,7 +9507,7 @@ if (!exports.setImmediate) {
   };
 }
 
-},{}],36:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -9661,7 +10052,7 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-},{"_shims":25}],37:[function(require,module,exports){
+},{"_shims":29}],41:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -9747,7 +10138,7 @@ exports.writeIEEE754 = function(buffer, value, offset, isBE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],38:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var assert;
 exports.Buffer = Buffer;
 exports.SlowBuffer = Buffer;
@@ -10873,7 +11264,7 @@ Buffer.prototype.writeDoubleBE = function(value, offset, noAssert) {
   writeDouble(this, value, offset, true, noAssert);
 };
 
-},{"./buffer_ieee754":37,"assert":31,"base64-js":39}],39:[function(require,module,exports){
+},{"./buffer_ieee754":41,"assert":35,"base64-js":43}],43:[function(require,module,exports){
 (function (exports) {
 	'use strict';
 
@@ -10959,7 +11350,7 @@ Buffer.prototype.writeDoubleBE = function(value, offset, noAssert) {
 	module.exports.fromByteArray = uint8ToBase64;
 }());
 
-},{}],40:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 var http = module.exports;
 var EventEmitter = require('events').EventEmitter;
 var Request = require('./lib/request');
@@ -11021,7 +11412,7 @@ var xhrHttp = (function () {
     }
 })();
 
-},{"./lib/request":41,"events":32}],41:[function(require,module,exports){
+},{"./lib/request":45,"events":36}],45:[function(require,module,exports){
 var Stream = require('stream');
 var Response = require('./response');
 var concatStream = require('concat-stream');
@@ -11155,7 +11546,7 @@ var indexOf = function (xs, x) {
     return -1;
 };
 
-},{"./response":42,"Base64":43,"concat-stream":44,"stream":33,"util":36}],42:[function(require,module,exports){
+},{"./response":46,"Base64":47,"concat-stream":48,"stream":37,"util":40}],46:[function(require,module,exports){
 var Stream = require('stream');
 var util = require('util');
 
@@ -11277,7 +11668,7 @@ var isArray = Array.isArray || function (xs) {
     return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{"stream":33,"util":36}],43:[function(require,module,exports){
+},{"stream":37,"util":40}],47:[function(require,module,exports){
 ;(function () {
 
   var
@@ -11334,7 +11725,7 @@ var isArray = Array.isArray || function (xs) {
 
 }());
 
-},{}],44:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 var stream = require('stream')
 var bops = require('bops')
 var util = require('util')
@@ -11385,7 +11776,7 @@ module.exports = function(cb) {
 
 module.exports.ConcatStream = ConcatStream
 
-},{"bops":45,"stream":33,"util":36}],45:[function(require,module,exports){
+},{"bops":49,"stream":37,"util":40}],49:[function(require,module,exports){
 var proto = {}
 module.exports = proto
 
@@ -11406,9 +11797,9 @@ function mix(from, into) {
   }
 }
 
-},{"./copy.js":48,"./create.js":49,"./from.js":50,"./is.js":51,"./join.js":52,"./read.js":54,"./subarray.js":55,"./to.js":56,"./write.js":57}],46:[function(require,module,exports){
-module.exports=require(39)
-},{}],47:[function(require,module,exports){
+},{"./copy.js":52,"./create.js":53,"./from.js":54,"./is.js":55,"./join.js":56,"./read.js":58,"./subarray.js":59,"./to.js":60,"./write.js":61}],50:[function(require,module,exports){
+module.exports=require(43)
+},{}],51:[function(require,module,exports){
 module.exports = to_utf8
 
 var out = []
@@ -11483,7 +11874,7 @@ function reduced(list) {
   return out
 }
 
-},{}],48:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 module.exports = copy
 
 var slice = [].slice
@@ -11537,12 +11928,12 @@ function slow_copy(from, to, j, i, jend) {
   }
 }
 
-},{}],49:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 module.exports = function(size) {
   return new Uint8Array(size)
 }
 
-},{}],50:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 module.exports = from
 
 var base64 = require('base64-js')
@@ -11602,13 +11993,13 @@ function from_base64(str) {
   return new Uint8Array(base64.toByteArray(str)) 
 }
 
-},{"base64-js":46}],51:[function(require,module,exports){
+},{"base64-js":50}],55:[function(require,module,exports){
 
 module.exports = function(buffer) {
   return buffer instanceof Uint8Array;
 }
 
-},{}],52:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 module.exports = join
 
 function join(targets, hint) {
@@ -11646,7 +12037,7 @@ function get_length(targets) {
   return size
 }
 
-},{}],53:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 var proto
   , map
 
@@ -11668,7 +12059,7 @@ function get(target) {
   return out
 }
 
-},{}],54:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 module.exports = {
     readUInt8:      read_uint8
   , readInt8:       read_int8
@@ -11757,14 +12148,14 @@ function read_double_be(target, at) {
   return dv.getFloat64(at + target.byteOffset, false)
 }
 
-},{"./mapped.js":53}],55:[function(require,module,exports){
+},{"./mapped.js":57}],59:[function(require,module,exports){
 module.exports = subarray
 
 function subarray(buf, from, to) {
   return buf.subarray(from || 0, to || buf.length)
 }
 
-},{}],56:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 module.exports = to
 
 var base64 = require('base64-js')
@@ -11802,7 +12193,7 @@ function to_base64(buf) {
 }
 
 
-},{"base64-js":46,"to-utf8":47}],57:[function(require,module,exports){
+},{"base64-js":50,"to-utf8":51}],61:[function(require,module,exports){
 module.exports = {
     writeUInt8:      write_uint8
   , writeInt8:       write_int8
@@ -11890,7 +12281,7 @@ function write_double_be(target, value, at) {
   return dv.setFloat64(at + target.byteOffset, value, false)
 }
 
-},{"./mapped.js":53}],58:[function(require,module,exports){
+},{"./mapped.js":57}],62:[function(require,module,exports){
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 exports.readIEEE754 = function(buffer, offset, isBE, mLen, nBytes) {
   var e, m,
@@ -14270,7 +14661,7 @@ function hasOwnProperty(obj, prop) {
 },{"_shims":5}]},{},[])
 ;;module.exports=require("buffer-browserify")
 
-},{}],59:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -14324,5 +14715,5 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}]},{},[21])
+},{}]},{},[25])
 ;

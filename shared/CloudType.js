@@ -4,23 +4,26 @@ function CloudType() {}
 
 CloudType.types = {};
 
-CloudType.register = function (type) {
-  CloudType.types[type.prototype.tag] = type;
+CloudType.register = function (typeDeclaration) {
+  CloudType.types[typeDeclaration.tag] = typeDeclaration;
 };
 
 CloudType.fromTag = function (tag) {
   return CloudType.types[tag];
 };
 
-CloudType.fromJSON = function (json) {
-  return CloudType.types[json.type].fromJSON(json.info);
+// Can only be used for non parametrized declarations (CInt/CString/CTime..)
+// By using this users can declare such types by their tag instead of by using the real declaration.
+CloudType.declareFromTag = function (tag) {
+  return CloudType.types[tag].declare();
 };
 
-CloudType.prototype.toJSON = function () {
-  return {
-    type: this.tag,
-    info: this._toJSON()
-  };
+CloudType.isCloudType = function (CType) {
+  return (typeof CloudType.types[CType.tag] === 'undefined');
+};
+
+CloudType.fromJSON = function (json, index) {
+  return CloudType.fromTag(json.tag).fromJSON(json, index);
 };
 
 CloudType.prototype.join = function (cint) {

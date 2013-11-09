@@ -2,7 +2,7 @@
 //
 // Extends the CString CloudType with the necessary test
 // functionalities for the tests. 
-var CString = require('../../shared/CString');
+var CString = require('../../shared/CString').CString;
 var should  = require('should');
 var util    = require('util');
 

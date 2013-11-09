@@ -2,7 +2,7 @@
 //
 // Extends the CInt CloudType with the necessary test
 // functionalities for the tests. 
-var CInt = require('../../shared/CInt');
+var CInt = require('../../shared/CInt').CInt;
 var should = require('should');
 
 module.exports = CInt;

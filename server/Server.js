@@ -38,7 +38,7 @@ Server.prototype.open = function (target, staticPath) {
 
     // Initial connect: initialize client with a uid, cid and a fork of current state
     socket.on('init', function (initClient) {
-      initClient({ uid: self.generateUID(), cid: cid++, state: self.state.fork() });
+      initClient({ uid: self.generateUID(), cid: ++cid, state: self.state.fork() });
     });
 
     socket.on('YieldPush', function (json, yieldPull) {

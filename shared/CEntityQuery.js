@@ -15,11 +15,11 @@ CEntityQuery.prototype.all = function () {
   var self = this;
   var entities = [];
   Object.keys(self.cArray.states).forEach(function (index) {
-    if (self.cArray.exists(index) && (typeof self.sumFilter === 'undefined' || self.sumFilter(self.cArray.get(index))))
-      entities.push(self.cArray.get(index));
+    if (self.cArray.exists(index) && (typeof self.sumFilter === 'undefined' || self.sumFilter(self.cArray.getByIndex(index))))
+      entities.push(self.cArray.getByIndex(index));
   });
   if (self.orderProperty) {
-    var property = self.cArray.get(self.orderProperty);
+    var property = self.cArray.getProperty(self.orderProperty);
     if (typeof property === 'undefined') {
       throw new Error("orderBy only allowed on properties for the moment");
     }

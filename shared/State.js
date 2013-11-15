@@ -1,12 +1,14 @@
 var CloudType = require('./CloudType');
 var CArray    = require('./CArray');
 var CEntity   = require('./CEntity');
+var CSetPrototype = require('./CSet').CSetPrototype;
 
 module.exports = State;
 
 function State(arrays, entities) {
   this.arrays = arrays || {};
   this.entities = entities || {};
+  this.cid = 0;
 }
 
 
@@ -17,7 +19,7 @@ function State(arrays, entities) {
 State.prototype.get = function (name) {
   var array = this.arrays[name];
   if (typeof array !== 'undefined' && array.isProxy) {
-    return array.getProperty('value').get();
+    return array.getProperty('value').get([]);
   }
   return this.arrays[name];
 };
@@ -29,12 +31,14 @@ State.prototype.declare = function (name, array) {
     array.state = this;
     array.name  = name;
 
-    // special case: find for CSet properties and declare their proxy entities
-//    array.forEachProperty(function (property) {
-//      if (property.cTypeTag === 'CSet') {
-//        self.declare(array.name + '.' + property.name, CEntity.declare([{entryIndex: 'string'}, {element: property.}]))
-//      }
-//    });
+    // CSet properties -> declare their proxy Entity and give reference to the CSet properties
+    array.forEachProperty(function (property) {
+      if (property.CType.prototype === CSetPrototype) {
+        console.log('detected CSet');
+        self.declare(array.name + property.name, CEntity.declare([{entryIndex: 'string'}, {element: property.CType.elementType}], {}));
+        property.CType.entity = self.get(array.name + property.name);
+      }
+    });
     return this.arrays[name] = array;
   }
   // global (CloudType) => create proxy CArray
@@ -55,6 +59,13 @@ State.prototype.isDefault = function (cType) {
 }
 
 /* Private */
+
+State.prototype.createUID = function (uid) {
+  var id = this.cid + "#" + uid;
+  console.log("CREATING NEW ENTITY:" + id);
+  return id;
+}
+
 State.prototype.toJSON = function () {
   var self = this;
   var arrays = {};
@@ -79,6 +90,15 @@ State.fromJSON = function (json) {
       throw "Unknown type in state: " + json.type;
     }
     state.declare(name, array);
+  });
+
+  state.forEachArray(function (array) {
+    // special case: CSet properties -> declare their proxy entities and give reference to the CSet properties
+    array.forEachProperty(function (property) {
+      if (property.CType.prototype === CSetPrototype) {
+        property.CType.entity = state.get(array.name + property.name);
+      }
+    });
   });
   return state;
 };
@@ -126,7 +146,7 @@ State.prototype.deleted = function (index, entity) {
   var self = this;
   // Entity
   if (typeof entity !== 'undefined' && entity instanceof CEntity) {
-    var entry = entity.get(index);
+    var entry = entity.getByIndex(index);
 //    console.log(index + ' of ' + entity.name + ' deleted ?');
 
     if (entity.deleted(index))
@@ -149,7 +169,7 @@ State.prototype.deleted = function (index, entity) {
     var entry = entity.get(index);
     entry.forEachKey(function (name, value) {
       var type = entity.indexes.getTypeOf(name);
-      if (self.deleted(name, type))
+      if (self.deleted(value, type))
         del = true;
     });
     return del;
@@ -166,9 +186,9 @@ State.prototype._join = function (rev, target) {
   var self = this;
   master.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
-      var joiner = rev.getProperty(property).get(index);
-      var joinee = self.getProperty(property).get(index);
-      var t = target.getProperty(property).get(index);
+      var joiner = rev.getProperty(property).getByIndex(index);
+      var joinee = self.getProperty(property).getByIndex(index);
+      var t = target.getProperty(property).getByIndex(index);
 
 //      console.log("joining: " + require('util').inspect(joiner) + " and " + require('util').inspect(joinee) + ' in ' + require('util').inspect(t));
       joinee._join(joiner, t);
@@ -209,7 +229,7 @@ State.prototype.applyFork = function () {
   var self = this;
   self.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
-      var type = property.get(index);
+      var type = property.getByIndex(index);
       type.applyFork();
     });
   });
@@ -219,8 +239,8 @@ State.prototype.replaceBy = function (state) {
   var self = this;
   state.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
-      var type1 = property.get(index);
-      var type2 = self.getProperty(property).get(index);
+      var type1 = property.getByIndex(index);
+      var type2 = self.getProperty(property).getByIndex(index);
       type2.replaceBy(type1);
     });
   });

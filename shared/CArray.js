@@ -35,8 +35,12 @@ CArray.prototype.forEachProperty = function (callback) {
   return this.properties.forEach(callback);
 };
 
-CArray.prototype.get = function (indexes) {
-  return new CArrayEntry(this, indexes);
+CArray.prototype.get = function () {
+  return new CArrayEntry(this, Array.prototype.slice.call(arguments));
+};
+
+CArray.prototype.getByIndex = function (index) {
+  return new CArrayEntry(this, index)
 };
 
 CArray.prototype.entries = function (propertyName) {

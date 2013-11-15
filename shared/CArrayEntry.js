@@ -4,6 +4,7 @@ module.exports = CArrayEntry;
 
 function CArrayEntry(cArray, indexes) {
   this.cArray = cArray;
+  console.log('creating entry with: ' + indexes);
   this.indexes = Indexes.getIndexes(indexes, cArray);
 }
 
@@ -35,15 +36,16 @@ CArrayEntry.prototype.forEachIndex = function (callback) {
 CArrayEntry.prototype.key = function (name) {
   var position = this.cArray.indexes.getPositionOf(name);
   if (position === -1)
-    return null;
+    throw Error("This Array does not have an index named " + name);
 
   var type = this.cArray.indexes.getType(position);
   var value =  this.indexes[position];
   if (type === 'int') {
+    console.log('parsing int: ' + this.indexes);
     value = parseInt(value, 10);
   }
   if (type !== 'int' && type !== 'string') {
-    value = this.cArray.state.get(type).get(value);
+    value = this.cArray.state.get(type).getByIndex(value);
   }
   return value;
 };

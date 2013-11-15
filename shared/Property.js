@@ -1,4 +1,5 @@
 var CloudType = require('./CloudType');
+var CSet      = require('./CSet');
 
 function Property(name, CType, cArray, values) {
   this.name = name;
@@ -27,14 +28,30 @@ Property.prototype.saveGet = function (indexes) {
 };
 
 Property.prototype.get = function (indexes) {
-  var index, ctype;
-  if (typeof indexes === 'undefined')
+  var index;
+  indexes = indexes || [];
+  // TODO: perform check on types
+  console.log(this.indexes.length());
+  console.log(indexes);
+  if (indexes.length !== this.indexes.length())
+    throw Error("Given indexes do not match declaration of Property: " + indexes);
+
+  if (indexes.length === 0)
     index = 'singleton';
   else
     index = this.indexes.get(indexes);
-  ctype = this.values[index];
+  return this.getByIndex(index);
+};
+
+Property.prototype.getByIndex = function (index) {
+  console.log('getting by index: ' + index);
+  var ctype = this.values[index];
   if (typeof ctype === 'undefined') {
-    ctype = this.values[index] = this.CType.newFor(indexes);
+    ctype = this.CType.newFor(index);
+    if (this.CType.prototype !== CSet.CSetPrototype) {
+      this.values[index] = ctype;
+    }
+
   }
   return ctype;
 };
@@ -43,11 +60,11 @@ Property.prototype.entries = function () {
   var self = this;
   var result = [];
   this.forEachIndex(function (index) {
-//    console.log("____entry checking : " + index + "____");
-//    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
-//    console.log("default: " + self.cArray.state.isDefault(self.get(index)));
-    if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.get(index))) {
-      result.push(self.cArray.get(index));
+    console.log("____entry checking : " + index + "____");
+    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
+    console.log("default: " + self.cArray.state.isDefault(self.getByIndex(index)));
+    if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.getByIndex(index))) {
+      result.push(self.cArray.getByIndex(index));
     }
   });
   return result;
@@ -68,6 +85,7 @@ Property.fromJSON = function (json, cArray) {
   Object.keys(json.values).forEach(function (index) {
     values[index] = CType.fromJSON(json.values[index], index);
   });
+  console.log(CType);
   return new Property(json.name, CType, cArray, values);
 };
 

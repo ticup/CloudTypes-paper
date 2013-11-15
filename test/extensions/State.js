@@ -48,8 +48,8 @@ State.prototype.forPairs = function (state2, callback) {
   var state1 = this;
   state1.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
-      var type1 = property.get(index);
-      var type2 = state2.getProperty(property).get(index);
+      var type1 = property.getByIndex(index);
+      var type2 = state2.getProperty(property).getByIndex(index);
       should.exist(type2);
       callback(type1, type2);
     });
@@ -66,9 +66,9 @@ State.prototype.isJoinOf = function (state1, state2) {
   var self = this;
   this.forEachProperty(function (property) {
     property.forEachIndex(function (index) {
-      var jType = property.get(index);
-      var type1 = state1.getProperty(property).get(index);
-      var type2 = state2.getProperty(property).get(index);
+      var jType = property.getByIndex(index);
+      var type1 = state1.getProperty(property).getByIndex(index);
+      var type2 = state2.getProperty(property).getByIndex(index);
       should.exist(type1);
       should.exist(type2);
       jType.isJoinOf(type1, type2);

@@ -38,7 +38,7 @@ CEntity.prototype.create = function (indexes) {
   this.uid += 1;
   var index = Indexes.createIndex([uid].concat(indexes));
   this.setCreated(index);
-  return this.get([uid].concat(indexes));
+  return this.get.apply(this, [uid].concat(indexes));
 };
 
 CEntity.prototype.delete = function (entry) {
@@ -47,8 +47,14 @@ CEntity.prototype.delete = function (entry) {
   this.state.propagate();
 };
 
-CEntity.prototype.get = function (indexes) {
-  return new CEntityEntry(this, indexes);
+// Pure arguments version (user input version)
+CEntity.prototype.get = function () {
+  return new CEntityEntry(this, Array.prototype.slice.call(arguments));
+};
+
+// Flattened index version (internal version)
+CEntity.prototype.getByIndex = function (index) {
+  return new CEntityEntry(this, index);
 };
 
 CEntity.prototype.forEachState = function (callback) {
@@ -76,7 +82,7 @@ CEntity.prototype.all = function () {
   var entities = [];
   Object.keys(this.states).forEach(function (index) {
     if (self.states[index] === OK)
-      entities.push(self.get(index));
+      entities.push(self.getByIndex(index));
   });
   return entities;
 };

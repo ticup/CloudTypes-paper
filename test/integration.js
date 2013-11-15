@@ -10,6 +10,7 @@ var CEntity     = require('../shared/CEntity');
 var ServerState = require('../server/State');
 var CloudType   = require('../shared/CloudType');
 var CInt        = require('./extensions/CInt');
+var CSet        = require('./extensions/CInt');
 
 var CloudTypeServer = require('../server/main.js');
 var stubs = require('./stubs');
@@ -124,7 +125,7 @@ describe('Integration #', function () {
           (function () { state1.isConsistent(server.state); }).should.throwError();
 
           // server synced with client1 after some ms
-          setTimeout(function () {
+          waitForTransport(function () {
             server.state.isConsistent(state1);
             (function () { state2.isConsistent(server.state); }).should.throwError();
 
@@ -135,7 +136,7 @@ describe('Integration #', function () {
             state2.yield();
             (function () { state2.isConsistent(server.state); }).should.throwError();
 
-            setTimeout(function () {
+            waitForTransport(function () {
               (function () { state2.isConsistent(server.state); }).should.throwError();
 
               // yield3 for client2: should have received revision of server by now
@@ -149,8 +150,8 @@ describe('Integration #', function () {
               client1.close();
               client2.close();
               done();
-            }, 200);
-          }, 200);
+            });
+          });
         });
       });
     });
@@ -257,7 +258,7 @@ describe('Integration #', function () {
         // client use data
         carray = state1.get("Product");
         should.exist(carray);
-        entry = carray.get(["Napkins", "Mom"]);
+        entry = carray.get("Napkins", "Mom");
         should.exist(entry);
         should.exist(entry.get('toBuy'));
         entry.get('toBuy').set(10);
@@ -307,6 +308,9 @@ describe('Integration #', function () {
         setTimeout(function () {
           server.state.isConsistent(state1);
           server.state.get("Customer").all().length.should.equal(1);
+          console.log('FOO');
+          server.state.print();
+          console.log(server.state.get("Customer").all()[0]);
           server.state.get("Customer").all()[0].get('name').get().should.equal("Jerry");
 
           customer.delete();

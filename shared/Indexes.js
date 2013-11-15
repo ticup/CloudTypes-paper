@@ -19,6 +19,10 @@ Indexes.prototype.forEach = function (callback) {
   }
 };
 
+Indexes.prototype.length = function () {
+  return this.names.length;
+};
+
 Indexes.prototype.getType = function (position) {
   return this.types[position];
 };
@@ -42,14 +46,45 @@ Indexes.prototype.get = function (indexes) {
 };
 
 Indexes.createIndex = function createIndex(indexes) {
-  if (typeof indexes === 'string')
-    return indexes;
-  return indexes.map(function (val) { return val.toString(); }).join(".");
+  if (! (indexes instanceof Array))
+    throw Error("createIndex: expects an array of indexes, given: " + indexes);
+  return "[" + [].map.call(indexes, function (val) { return val.toString(); }).join(".") + "]";
 };
 
+function unParseIndex(string) {
+  var count = 0;
+  var current = "";
+  var parts = [];
+  string.split("").forEach(function (letter) {
+    if (letter === '.' && count === 1) {
+      parts.push(current);
+      current = "";
+      return;
+    }
+
+    if (letter === '[') {
+      if (++count === 1) {
+        return;
+      }
+    }
+
+    if (letter === ']') {
+      if (count-- === 1) {
+        parts.push(current);
+        return;
+      }
+    }
+
+    current += letter;
+  });
+  return parts;
+}
+
 Indexes.getIndexes = function getIndexes(index, cArray) {
-  if (typeof index === 'string')
-    index = index.split(".");
+  // Flattened string given: unflatten
+  if (! (index instanceof Array)) {
+    index = unParseIndex(index);
+  }
 
   for (var i = 0; i<index.length; i++) {
     var type = cArray.indexes.getType(i);
@@ -62,7 +97,7 @@ Indexes.getIndexes = function getIndexes(index, cArray) {
     }
 
     // If entry is given, just store index!
-    if (typeof index[i] !== 'string')
+    if (typeof index[i] !== 'string' && typeof index[i] !== 'number')
       index[i] = index[i].index();
 
   }

@@ -63,7 +63,7 @@ Application.prototype.install = function () {
   // install create new grocery
   $('#newgroceryform').submit(function (event) {
     event.preventDefault();
-    var name = $('#newgroceryname').val();
+    var name = encodeURI($('#newgroceryname').val());
     var toBuy = parseInt($('#newgrocerytobuy').val(), 10);
     app.toBuy(name, toBuy);
     app.update();
@@ -74,7 +74,7 @@ Application.prototype.install = function () {
     event.preventDefault();
 
     // scrape values
-    var name = $(this).data('entry');
+    var name = encodeURI($(this).data('entry'));
     var toBuy = parseInt($('#boughtcount').val(), 10);
 
     // actual bought operation + update view

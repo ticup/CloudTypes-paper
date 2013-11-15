@@ -17,12 +17,6 @@ State.prototype.reinit = function (client) {
   this.received = false;
 };
 
-State.prototype.createUID = function (uid) {
-  var id = this.cid + "#" + uid;
-  console.log("CREATING NEW ENTITY:" + id);
-  return id;
-}
-
 State.prototype.yieldPull = function (state) {
   this.pending  = false;
   this.received = true;

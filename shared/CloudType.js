@@ -22,8 +22,8 @@ CloudType.isCloudType = function (CType) {
   return (typeof CloudType.types[CType.tag] === 'undefined');
 };
 
-CloudType.fromJSON = function (json, index) {
-  return CloudType.fromTag(json.tag).fromJSON(json, index);
+CloudType.fromJSON = function (json) {
+  return CloudType.fromTag(json.tag).fromJSON(json);
 };
 
 CloudType.prototype.join = function (cint) {

@@ -3,6 +3,7 @@ var CloudType = require('../shared/CloudType');
 var CArray    = require('../shared/CArray');
 var CEntity   = require('../shared/CEntity');
 var Property  = require('../shared/Property');
+var CSet      = require('../shared/CSet').Declaration.declare;
 var CInt      = require('./extensions/CInt');
 var should    = require('should');
 var stubs     = require('./stubs');
@@ -116,6 +117,32 @@ describe('State', function () {
     });
   });
 
+  describe('.declare(name, cArray) (declare CArray with a CSet property)', function () {
+    var state = new State();
+    var name = "moments";
+    var entityName = name+"slots";
+
+    state.declare(name, CArray.declare([{moment: 'string'}], {slots: CSet('int')}));
+    it('should add the array to the arrays map with given name', function () {
+      state.arrays.should.have.property(name);
+    });
+    it('should install reference of self in cArray', function () {
+      state.arrays[name].state.should.equal(state);
+    });
+    it('should install reference of name in cArray', function () {
+      state.arrays[name].name.should.equal(name);
+    });
+    it('should add an entity for the slot property with name <array.name><slot.name>', function () {
+      should.exist(state.arrays[entityName]);
+      state.arrays[entityName].should.be.an.instanceof(CEntity);
+    });
+    it('should install a reference to the entity in the CType of the property', function () {
+      should.exist(state.arrays[name].properties.get('slots').CType.entity);
+      state.arrays[name].properties.get('slots').CType.entity.should.equal(state.arrays[entityName]);
+    });
+  });
+
+
   describe('.get(cArrayName)', function () {
     var state = new State();
     var name = "Grocery";
@@ -227,7 +254,13 @@ describe('State', function () {
   describe('.replaceBy(state)', function () {
     var state1  = State.fromJSON(stubs.stateUnchanged);
     var state2  = State.fromJSON(stubs.stateChanged);
+    console.log("STATE1:");
+    state1.print();
+    console.log("STATE2:");
+    state2.print();
     state1.replaceBy(state2);
+    console.log("replaced:")
+    state1.print();
     it('should change its own state to given state', function () {
       state1.isEqual(state2);
     });

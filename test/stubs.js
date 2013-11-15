@@ -39,10 +39,10 @@ exports.groceryUnchanged = {
       name: 'toBuy',
       type: { tag: 'CInt' },
       values: {
-        'Apples'  : cint.toJSON(),
-        'Cows'    : cint1.toJSON(),
-        'Napkins' : cint2.toJSON(),
-        'Potatoes': cint3.toJSON()
+        '[Apples]'  : cint.toJSON(),
+        '[Cows]'    : cint1.toJSON(),
+        '[Napkins]' : cint2.toJSON(),
+        '[Potatoes]': cint3.toJSON()
       }
     }
   ],
@@ -60,18 +60,18 @@ exports.productUnchanged = {
       name: 'name',
       type: { tag: 'CString' },
       values: {
-        '1': cstring.toJSON(),
-        '3': cstring1.toJSON(),
-        '4': cstring2.toJSON(),
-        '5': cstring3.toJSON()
+        '[1]': cstring.toJSON(),
+        '[3]': cstring1.toJSON(),
+        '[4]': cstring2.toJSON(),
+        '[5]': cstring3.toJSON()
       }
     },
     {
       name: 'price',
       type: { tag: 'CInt' },
       values: {
-        '1': cint1.toJSON(),
-        '2': cint3.toJSON()
+        '[1]': cint1.toJSON(),
+        '[2]': cint3.toJSON()
       }
     }
   ],
@@ -89,12 +89,12 @@ exports.customerUnchanged = {
       name: 'name',
       type: { tag: 'CString' },
       values: {
-        'Customer:0#0': cstring.toJSON()
+        '[Customer:0#0]': cstring.toJSON()
       }
     }
   ],
   states: {
-    'Customer:0#0': 'ok'
+    '[Customer:0#0]': 'ok'
   }
 };
 
@@ -109,19 +109,19 @@ exports.orderUnchanged = {
       name: 'product',
       type: { tag: 'CString' },
       values: {
-        'Order:0#0.Customer:0#0': cstring.toJSON(),
+        '[[Order:0#0].[Customer:0#0]]': cstring.toJSON(),
       }
     },
     {
       name: 'quantity',
       type: { tag: 'CInt' },
       values: {
-        'Order:0#0.Customer:0#0': cint2.toJSON()
+        '[[Order:0#0].[Customer:0#0]]': cint2.toJSON()
       }
     }
   ],
   states: {
-    'Order:0#0.Customer:0#0': 'ok'
+    '[[Order:0#0].[Customer:0#0]]': 'ok'
   }
 };
 
@@ -206,11 +206,11 @@ exports.groceryChanged = {
       name: 'toBuy',
       type: { tag: 'CInt' },
       values: {
-        'Apples'  : cint.toJSON(),
-        'Peers'   : cint.toJSON(),
-        'Cows'    : cint1.toJSON(),
-        'Napkins' : cint2.toJSON(),
-        'Potatoes': cint3.toJSON()
+        '[Apples]'  : cint.toJSON(),
+        '[Peers]'   : cint.toJSON(),
+        '[Cows]'    : cint1.toJSON(),
+        '[Napkins]' : cint2.toJSON(),
+        '[Potatoes]': cint3.toJSON()
       }
     }
   ],
@@ -227,19 +227,19 @@ exports.productChanged = {
       name  : 'name',
       type  : { tag: 'CString' },
       values: {
-        '1': cstring.toJSON(),
-        '2': cstring.toJSON(),
-        '3': cstring1.toJSON(),
-        '4': cstring2.toJSON(),
-        '5': cstring3.toJSON()
+        '[1]': cstring.toJSON(),
+        '[2]': cstring.toJSON(),
+        '[3]': cstring1.toJSON(),
+        '[4]': cstring2.toJSON(),
+        '[5]': cstring3.toJSON()
       }
     },
     {
       name: 'price',
       type: { tag: 'CInt' },
       values: {
-        '1': cint1.toJSON(),
-        '2': cint3.toJSON()
+        '[1]': cint1.toJSON(),
+        '[2]': cint3.toJSON()
       }
     }
   ],
@@ -265,11 +265,11 @@ exports.customerChanged = {
     }
   ],
   states: {
-    'Customer:0#0': 'deleted',
-    'Customer:0#1': 'ok',
-    'Customer:0#2': 'ok',
-    'Customer:0#3': 'ok',
-    'Customer:0#4': 'ok'
+    '[Customer:0#0]': 'deleted',
+    '[Customer:0#1]': 'ok',
+    '[Customer:0#2]': 'ok',
+    '[Customer:0#3]': 'ok',
+    '[Customer:0#4]': 'ok'
   }
 };
 
@@ -284,36 +284,36 @@ exports.orderChanged = {
       name: 'product',
       type: { tag: 'CString' },
       values: {
-        'Order:0#0.Customer:0#0': cstring.toJSON(),
-        'Order:0#1.Customer:0#0': cstring1.toJSON(),
-        'Order:0#2.Customer:0#1': cstring2.toJSON(),
-        'Order:0#3.Customer:0#1': cstring.toJSON(),
-        'Order:0#4.Customer:0#1': cstring3.toJSON(),
-        'Order:0#5.Customer:0#2': cstring3.toJSON(),
-        'Order:0#6.Customer:0#2': cstring3.toJSON()
+        '[[Order:0#0].[Customer:0#0]]': cstring.toJSON(),
+        '[[Order:0#1].[Customer:0#0]]': cstring1.toJSON(),
+        '[[Order:0#2].[Customer:0#1]]': cstring2.toJSON(),
+        '[[Order:0#3].[Customer:0#1]]': cstring.toJSON(),
+        '[[Order:0#4].[Customer:0#1]]': cstring3.toJSON(),
+        '[[Order:0#5].[Customer:0#2]]': cstring3.toJSON(),
+        '[[Order:0#6].[Customer:0#2]]': cstring3.toJSON()
       }
     },
     {
       name: 'quantity',
       type: { tag: 'CInt' },
       values: {
-        'Order:0#0.Customer:0#0': cint2.toJSON(),
-        'Order:0#2.Customer:0#1': cint.toJSON(),
-        'Order:0#3.Customer:0#1': ucint3.toJSON(),
-        'Order:0#4.Customer:0#1': ucint3.toJSON(),
-        'Order:0#5.Customer:0#2': ucint2.toJSON(),
-        'Order:0#6.Customer:0#2': ucint1.toJSON()
+        '[[Order:0#0].[Customer:0#0]]': cint2.toJSON(),
+        '[[Order:0#2].[Customer:0#1]]': cint.toJSON(),
+        '[[Order:0#3].[Customer:0#1]]': ucint3.toJSON(),
+        '[[Order:0#4].[Customer:0#1]]': ucint3.toJSON(),
+        '[[Order:0#5].[Customer:0#2]]': ucint2.toJSON(),
+        '[[Order:0#6].[Customer:0#2]]': ucint1.toJSON()
       }
     }
   ],
   states: {
-    'Order:0#0.Customer:0#0': 'deleted',
-    'Order:0#1.Customer:0#0': 'deleted',
-    'Order:0#2.Customer:0#1': 'deleted',
-    'Order:0#3.Customer:0#1': 'ok',
-    'Order:0#4.Customer:0#1': 'deleted',
-    'Order:0#5.Customer:0#2': 'ok',
-    'Order:0#6.Customer:0#2': 'ok'
+    '[[Order:0#0].[Customer:0#0]]': 'deleted',
+    '[[Order:0#1].[Customer:0#0]]': 'deleted',
+    '[[Order:0#2].[Customer:0#1]]': 'deleted',
+    '[[Order:0#3].[Customer:0#1]]': 'ok',
+    '[[Order:0#4].[Customer:0#1]]': 'deleted',
+    '[[Order:0#5].[Customer:0#2]]': 'ok',
+    '[[Order:0#6].[Customer:0#2]]': 'ok'
   }
 };
 

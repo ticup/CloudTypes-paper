@@ -2,18 +2,23 @@
  * Created by ticup on 08/11/13.
  */
 var CloudType = require('./CloudType');
-module.exports = CSetDeclaration;
+
+
 
 function CSetDeclaration() { }
 // CSetDeclaration: Declare a parametrized CSet type for a property
 CSetDeclaration.declare = function (elementType) {
   function CSet(entryIndex) {
+    this.type = CSet;
     this.entryIndex = entryIndex;
-    this.elementType = elementType;
-    //this.cSetEntity should be set by State!
   }
 
+  // CSet.entity should be set by the state to the entity that is made for this CSet.
+  CSet.elementType = elementType;
+
+
   CSet.newFor = function (entryIndex) {
+    console.log('CREATING CSET for : ' + entryIndex);
     return new CSet(entryIndex);
   };
 
@@ -33,7 +38,7 @@ CSetDeclaration.declare = function (elementType) {
 
 // called by CloudType to initialize the parametrized CSet for a property
 CSetDeclaration.fromJSON = function (json) {
-  return CSetDeclaration(json.elementType);
+  return CSetDeclaration.declare(json.elementType);
 };
 
 // register this declaration as usable (will also allow to create CSet with CloudType.fromJSON())
@@ -43,7 +48,6 @@ CloudType.register(CSetDeclaration);
 
 
 var CSetPrototype = Object.create(CloudType.prototype);
-
 
 // Operations for the parametrized CSets
 
@@ -55,22 +59,23 @@ CSetPrototype.toJSON = function () {
 
 // semantic operations (all delegated to the dedicated entity)
 CSetPrototype.add = function (element) {
-  return this.proxyEntity.create(this.entryIndex, element);
+  return this.type.entity.create([this.entryIndex, element]);
 };
 
 CSetPrototype.contains = function (element) {
   var entryIndex = this.entryIndex;
-  var elementType = this.elementType;
-  return (this.proxyEntity
+  var elementType = this.type.elementType;
+  return (this.type.entity
       .where(function (entry) {
+        console.log(isEntryForElement(entry, entryIndex, elementType, element));
         return isEntryForElement(entry, entryIndex, elementType, element);
       }).all().length !== 0);
 };
 
 CSetPrototype.remove = function (element) {
   var entryIndex = this.entryIndex;
-  var elementType = this.elementType;
-  this.proxyEntity
+  var elementType = this.type.elementType;
+  this.type.entity
       .where(function (entry) {
         return isEntryForElement(entry, entryIndex, elementType, element);
       }).all().forEach(function (entry) {
@@ -79,14 +84,16 @@ CSetPrototype.remove = function (element) {
 };
 
 CSetPrototype.get = function () {
-  return this.proxyEntity.all();
+  return this.type.entity.all();
 };
 
 function isEntryForElement(entry, entryIndex, elementType, element) {
+  console.log( entry.key('entryIndex') + ' ?= ' +  entryIndex + ": " + (entry.key('entryIndex') === entryIndex));
+  console.log(entry.key('element') + ' ?= ' + element + ": " + (entry.key('element') === element));
   return (entry.key('entryIndex') === entryIndex &&
-      (elementType === 'string' || elementType === 'int') ?
+      ((elementType === 'string' || elementType === 'int') ?
       (entry.key('element') === element) :
-      (entry.key('element').equals(element)));
+      (entry.key('element').equals(element))));
 }
 
 // Defining _join(cint, target) provides the join and joinIn methods
@@ -116,3 +123,7 @@ CSetPrototype.isDefault = function () {
 CSetPrototype.compare = function (cset, reverse) {
   return ((reverse ? -1 : 1) * (this.get().length - cset.get().length));
 };
+
+
+exports.Declaration = CSetDeclaration;
+exports.CSetPrototype = CSetPrototype;

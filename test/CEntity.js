@@ -193,22 +193,22 @@ describe('CEntity state independent operations', function () {
       var entity2 = CEntity.fromJSON(stubs.customerChanged);
 
       // undefined < OK
-      should.not.exist(entity1.states['Customer:0#1']);
-      entity2.states['Customer:0#1'].should.equal("ok");
-      entity1.setMax(entity1, entity2, 'Customer:0#1');
-      entity1.states['Customer:0#1'].should.equal("ok");
+      should.not.exist(entity1.states['[Customer:0#1]']);
+      entity2.states['[Customer:0#1]'].should.equal("ok");
+      entity1.setMax(entity1, entity2, '[Customer:0#1]');
+      entity1.states['[Customer:0#1]'].should.equal("ok");
 
       // OK < DELETED
-      entity1.states['Customer:0#0'].should.equal("ok");
-      entity2.states['Customer:0#0'].should.equal("deleted");
-      entity1.setMax(entity1, entity2, 'Customer:0#0');
-      entity1.states['Customer:0#0'].should.equal("deleted");
+      entity1.states['[Customer:0#0]'].should.equal("ok");
+      entity2.states['[Customer:0#0]'].should.equal("deleted");
+      entity1.setMax(entity1, entity2, '[Customer:0#0]');
+      entity1.states['[Customer:0#0]'].should.equal("deleted");
 
       // undefined < DELETED
-      entity2.states['Customer:0#7'] = "deleted";
-      should.not.exist(entity1.states['Customer:0#7']);
-      entity1.setMax(entity1, entity2, 'Customer:0#7');
-      entity1.states['Customer:0#7'].should.equal("deleted");
+      entity2.states['[Customer:0#7]'] = "deleted";
+      should.not.exist(entity1.states['[Customer:0#7]']);
+      entity1.setMax(entity1, entity2, '[Customer:0#7]');
+      entity1.states['[Customer:0#7]'].should.equal("deleted");
 
     });
   });
@@ -250,6 +250,11 @@ describe('CEntity state dependent operations: ', function () {
         var all = where.all();
         should.exist(all);
         all.length.should.equal(3);
+      });
+      it('should return entries initialized with proper indexes', function () {
+        var order = where.all()[0];
+        console.log(order);
+        should.exist(order.key('customer'));
       });
     });
 

@@ -306,7 +306,7 @@ Here is a quick overview of other (perhaps more sophisticated) things you can do
 
 Examples
 --------
-The examples are running live on heroku: [Counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html). The grocery example is also implemented in Angularjs [here](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html).
+The examples are running live on heroku: [Counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html). The grocery example is also implemented in AngularJS [here](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html).
 
 See the examples folder (e.g. [the grocery example](https://github.com/ticup/CloudTypes/blob/master/examples/grocery/server/index.js)) on how to get everything working.
 
@@ -609,11 +609,11 @@ Reconnected will be invoked whenever connection with the server was lost but est
 
 Angular Modules
 ---------------
-[example-assets/js/angular-cloudtypes.js](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-cloudtypes.js) is an Angularjs module to easily use the Cloud Types client in the AngularJS framework. Check out the [Counter](https://github.com/ticup/CloudTypes/blob/master/examples/counter-ng/client) Angularjs implementation to get started and the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) Angularjs implementation for a little more advanced usage + usage of the avbuttons module (lets you easily plug in the online/offline buttons used in the examples).
+[example-assets/js/angular-cloudtypes.js](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-cloudtypes.js) is an AngularJS module to easily use the Cloud Types client in the AngularJS framework. Check out the [Counter](https://github.com/ticup/CloudTypes/blob/master/examples/counter-ng/client) AngularJS implementation to get started and the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) AngularJS implementation for a little more advanced usage + usage of the avbuttons module (lets you easily plug in the online/offline buttons used in the examples).
 
 <a name="counter-example-ng"></a>g
 ### Counter Example
-Let's remake the counter example using Angular:
+Let's remake the counter example using AngularJS:
 #### Server
 Stays exactly the same. As a matter of fact, we just use the server of our non-angular counter example! (repeated for completeness)
 
@@ -696,14 +696,14 @@ Setup app and dependencies + initialize model after retrieving state in app.js:
         });
 
 
-Quite clean indeed, thanks CloudTypes and Angular.
+Quite clean indeed, thanks CloudTypes and AngularJS.
 
 
 ### Angular-cloudtypes
 The [cloudtypes](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-cloudtypes.js) module provides followings services:
 
 #### $client
-> Angular abstraction for the CloudTypesClient, has following API:
+> AngularJS abstraction for the CloudTypesClient, has following API:
 
 1. connect(host, ms)
 > Connects to given host and starts periodic yielding every ms when connected.
@@ -727,7 +727,7 @@ The [cloudtypes](https://github.com/ticup/CloudTypes/blob/master/example-assets/
 > The $state service uses the $client service to automatically connect to the server with the hostname of the current window location and returns a promise for the state of that server.
 
 #### $cachedArray
-> Remember that array and entity entries are not returned as the same object every time. This has some implications when using it within a framework such as Angularjs which uses your objects used as models to store dirty information. Therefore we supply a $cachedArray service which you can use to use array/entity queries as models.
+> Remember that array and entity entries are not returned as the same object every time. This has some implications when using it within a framework such as AngularJS which uses your objects used as models to store dirty information. Therefore we supply a $cachedArray service which you can use to use array/entity queries as models.
 
 1. create(getValue)
 
@@ -765,7 +765,7 @@ An example usage from the grocery example:
 
 
 ### Angular-avbuttons
-If you want those online/offline buttons from in the examples to track and/or change availability of the cloudtypes server you can use the [angular-avbuttons](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-avbuttons.js) module. (Check out the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) Angular client implementation for usage)
+If you want those online/offline buttons from in the examples to track and/or change availability of the cloudtypes server you can use the [angular-avbuttons](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-avbuttons.js) module. (Check out the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) AngularJS client implementation for usage)
 
 1. Load the module (index.html)
 

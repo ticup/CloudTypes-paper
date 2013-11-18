@@ -629,7 +629,7 @@ Stays exactly the same. As a matter of fact, we just use the server of our non-a
     cloudTypes.publish(8080, __dirname);
 
 
-#### Client Html
+#### Client HTML
 
     <html>
     <head></head>

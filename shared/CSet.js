@@ -32,6 +32,7 @@ CSetDeclaration.declare = function (elementType) {
     return new CSet(entryIndex);
   };
 
+  CSet.tag = "CSet";
   CSet.prototype = CSetPrototype;
   return CSet;
 }

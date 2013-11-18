@@ -66,7 +66,7 @@ That's it, even better is of course to add it as a dependency to your package.js
 
 Usage
 -----
-As an introduction we'll make [a simple counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html) example that can be incremented, decremented or set to a particular value. The complete code is in the repository and can be found [here](https://github.com/ticup/CloudTypes/blob/master/examples/counter/server/index.js).
+As an introduction we'll make [a simple counter](http://cloudtypes.herokuapp.com/examples/counter/client/index.html) example that can be incremented, decremented or set to a particular value. The complete code is in the repository and can be found [here](https://github.com/ticup/CloudTypes/blob/master/examples/counter/server/index.js).
 
 Remember that you can use this counter offline to, synchronizing with the other clients/server when you go online again.
 In case of *set* the counter will have the value last set by a client, nothing special here.

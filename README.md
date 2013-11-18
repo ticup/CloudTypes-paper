@@ -114,7 +114,7 @@ Load the CloudTypes client bundle into your html and start using the distributed
       var client = CloudTypes.createClient();
 
       // connect to the server
-      client.connect('localhost', function (state) {
+      client.connect(window.location.hostname, function (state) {
 
         // retrieve counter + set up View
         var counter = state.get('counter');
@@ -211,7 +211,7 @@ Here is a quick overview of other (perhaps more sophisticated) things you can do
     var counter = state.get('counter');
 
     // add is commutative. This means all add operations can be easily accumulated,
-    / thus making sure everyone's add is registered and taken into account
+    // thus making sure everyone's add is registered and taken into account
     counter.add(1);
     counter.add(-10);
 
@@ -305,7 +305,8 @@ Here is a quick overview of other (perhaps more sophisticated) things you can do
 
 Examples
 --------
-The examples are running live on heroku: [Counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html).
+The examples are running live on heroku: [Counter](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html). The grocery example is also implemented in Angularjs [here](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html).
+
 See the examples folder (e.g. [the grocery example](https://github.com/ticup/CloudTypes/blob/master/examples/grocery/server/index.js)) on how to get everything working.
 
 You can run the examples on your own computer if you have the optional dependencies installed (static file server):
@@ -605,6 +606,136 @@ Reconnected will be invoked whenever connection with the server was lost but est
             // reservation succeeded
         });
 
+Angular Modules
+---------------
+[example-assets/js/angular-cloudtypes.js](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-cloudtypes.js) is an Angularjs module to easily use the Cloud Types client in the AngularJS framework. Check out the [Counter](https://github.com/ticup/CloudTypes/blob/master/examples/counter-ng/client) Angularjs implementation to get started and the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) Angularjs implementation for a little more advanced usage + usage of the avbuttons module (lets you easily plug in the online/offline buttons used in the examples).
+
+
+### Counter Example
+Let's remake the counter example using Angular:
+
+#### Server
+Stays exactly the same. As a matter of fact, we just use the server of our non-angular counter example!
+
+#### Client Html
+
+    <html>
+    <head></head>
+    <body>
+    <h1>Counter</h1>
+    <div>
+      <!-- initialize DOM with our angular app + controller -->
+      <div ng-app="counterApp" ng-controller="CounterCtrl">
+
+        <!-- display the value of the counter CloudType -->
+        <div>{{counter.get()}}</div>
+
+        <!-- increase/decrease buttons -->
+        <button ng-click="increaseCounter()"> Increase </button>
+        <button ng-click="decreaseCounter()"> Decrease </button> <br>
+
+        <!-- set buttons that uses the 'amount' model which is (2-way) bound to the DOM input -->
+        <input type="number" ng-model="amount">
+        <button ng-click="setCounter(amount)"> Set </button>
+      </div>
+    </div>
+
+    <!-- Load jquery, angular, angular-cloudtypes wrapper, cloudtypes client, and the counter app -->
+    <script src="../../../example-assets/js/jquery-1.10.2.min.js"></script>
+    <script src="../../../example-assets/js/angular.js"></script>
+    <script src="../../../example-assets/js/angular-cloudtypes.js"></script>
+    <script src="../../../client/bundle.js"></script>
+    <script src="app.js"></script>
+    </body>
+    </html>
+
+
+#### Client App
+Setup app and dependencies + initialize model after retrieving state in app.js:
+
+    angular
+        .module('counterApp', ['cloudtypes'])
+
+        // make a controller and inject the $client and $state service of the cloudtypes module
+        .controller('CounterCtrl', function ($scope, $client, $state) {
+
+          // the $state service automatically sets up a connection to the cloud types server
+          // and returns a promise for the state.
+          $state.then(function (state) {
+            // cloud types state now available from server, initialize model
+            $scope.counter = state.get('counter');
+
+            // notify angular that the model might have been changed
+            $client.onYield(function () { $scope.$apply('') });
+          });
+
+          // model methods
+          $scope.increaseCounter = function () {
+            $scope.counter.add(1);
+          };
+
+          $scope.decreaseCounter = function () {
+            $scope.counter.add(-1);
+          };
+
+          $scope.setCounter = function (amount) {
+            $scope.counter.set(amount);
+          };
+        });
+
+
+Quite clean indeed, thanks CloudTypes and Angular.
+
+
+### Angular-cloudtypes
+The [cloudtypes](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-cloudtypes.js) module provides followings services:
+
+#### $client
+> Angular abstraction for the CloudTypesClient, has following API:
+
+1. connect(host, ms)
+> Connects to given host and starts periodic yielding every ms when connected.
+
+2. disconnect()
+> Disconnects from the server (can be used for simulating going offline).
+
+3. reconnect()
+> Reconnects to the server (can be used after calling disconnect()).
+
+4. onConnect(callback)
+> Calls given callback whenever the client is connected to the server.
+
+5. onReconnect(callback)
+> Calls given callback whenever the client is reconnected to the server.
+
+6. onDisconnect(callback)
+> Calls given callback whenever the client is disconnected from the server.
+
+#### $state
+> The $state service uses the $client service to automatically connect to the server with the hostname of the current window location and returns a promise for the state of that server.
+
+
+### Angular-avbuttons
+If you want those online/offline buttons from in the examples to track and/or change availability of the cloudtypes server you can use the [angular-avbuttons](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-avbuttons.js) module. (Check out the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) Angular client implementation for usage)
+
+1. Load the module (index.html)
+
+        <script src="../../../example-assets/js/angular-avbuttons.js"></script>
+
+2. Set it as a dependency for your app (app.js)
+
+        angular.module('myapp', ['cloudtypes', 'avbuttons']);
+
+3. Use the avbuttons/connect/disconnect directives to install the functionality (index.html)
+
+        <div avbuttons="true" connect="#connect-btn" disconnect="#disconnect-btn">
+          <button id='disconnect-btn' class="active">Offline</button>
+          <button id='connect-btn'>Online</button>
+        </div>
+
+
+4. Make sure you have some CSS that marks a button with the class 'active' as active
+
 
 Library Goal
 -------------
@@ -615,18 +746,18 @@ Progress
 -------------
 This section keeps track of the state of this library.
 
-### Currently implemented:
+### Implemented:
 
 * Backbone for the (single server) synchronization and thorough testing of states with cloud types.
 * The Array and Entity structures for the state.
 * CInt and CString implementation of a cloud type.
 * Grocery list example with an Array and global CInt.
 * Project Manager example using Entities which also demonstrates weak Entities
+* CSet cloud type implementation. (version 0.0.9)
 
 
-### Currently worked on:
-
-* CSet cloud type implementation.
+### In progress:
+* CSet example
 
 
 The Code
@@ -704,6 +835,9 @@ Unit tests for the CArray object.
 
 * **CEntity.js**
 Unit tests for the CEntity object.
+
+* **CEntity.js**
+Unit tests for the CEntity CloudType.
 
 * **integration.js**
 

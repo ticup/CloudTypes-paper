@@ -1,4 +1,4 @@
-var groceryApp = angular.module('groceryApp', ['ngRoute', 'cloudtypes']);
+var groceryApp = angular.module('groceryApp', ['cloudtypes', 'avbuttons']);
 
 groceryApp.controller('GroceryCtrl', function ($scope, $client, $state, $cachedArray) {
   $scope.buying = null;
@@ -19,7 +19,7 @@ groceryApp.controller('GroceryCtrl', function ($scope, $client, $state, $cachedA
 
     // initial update of the array + set up periodic updates after yielding
     $scope.update();
-    $client.onTick(function () {
+    $client.onYield(function () {
       $scope.$apply($scope.update);
     });
   });

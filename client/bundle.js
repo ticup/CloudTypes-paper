@@ -81,9 +81,10 @@ function Client() {
   this.listeners = {};
 }
 
-Client.prototype.connect = function (host, options, connected, reconnected) {
+Client.prototype.connect = function (host, options, connected, reconnected, disconnected) {
   var self = this;
   if (typeof options === 'function') {
+    disconnected = reconnected;
     reconnected = connected;
     connected = options;
     options  = {};
@@ -94,6 +95,7 @@ Client.prototype.connect = function (host, options, connected, reconnected) {
   this.options = options;
   this.connected = connected;
   this.reconnected = reconnected;
+  this.disconnected = disconnected;
 
   this.socket = io.connect(host, options);
   this.socket.on('connect', function () {
@@ -116,11 +118,15 @@ Client.prototype.connect = function (host, options, connected, reconnected) {
       }
     }
   });
+  this.socket.on('disconnect', function () {
+    if (typeof disconnected === 'function') {
+      disconnected();
+    }
+  });
 };
 
 Client.prototype.reconnect = function () {
-  console.log('reconnecting: ' + this.options);
-  return this.connect(this.host, this.options, this.connected, this.reconnected);
+  return this.connect(this.host, this.options, this.connected, this.reconnected, this.disconnected);
 };
 
 Client.prototype.disconnect = function () {

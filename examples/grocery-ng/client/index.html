@@ -26,9 +26,9 @@
 
 <div id="wrap">
   <div class="container">
-    <div class="network-actions">
-      <button href="#" id='disconnect-btn' class="btn btn-default btn-sm pull-right">Offline</button>
-      <button href="#" id='connect-btn' class="btn btn-default btn-sm pull-right active">Online</button>
+    <div avbuttons="true" connect="#connect-btn" disconnect="#disconnect-btn" class="network-actions">
+      <button href="#" id='disconnect-btn' class="btn btn-default btn-sm pull-right active">Offline</button>
+      <button href="#" id='connect-btn' class="btn btn-default btn-sm pull-right">Online</button>
     </div>
     <div class="clearfix"></div>
   <div class="text-center">
@@ -92,10 +92,8 @@
 <script src="../../../example-assets/js/jquery-1.10.2.min.js"></script>
 <script src="../../../example-assets/js/bootstrap.min.js"></script>
 <script src="../../../example-assets/js/angular.js"></script>
-<script src="../../../example-assets/js/angular-route.js"></script>
 <script src="../../../example-assets/js/angular-cloudtypes.js"></script>
-<script src="../../../example-assets/js/availabilityButtons.js"></script>
-<script src="../../../example-assets/js/client-utils.js"></script>
+<script src="../../../example-assets/js/angular-avbuttons.js"></script>
 <script src="../../../client/bundle.js"></script>
 <script src="app.js"></script>
 </body>

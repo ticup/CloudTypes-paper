@@ -1,0 +1,29 @@
+<html>
+<head></head>
+<body>
+<h1>Counter</h1>
+<div>
+  <!-- initialize DOM with our angular app + controller -->
+  <div ng-app="counterApp" ng-controller="CounterCtrl">
+
+    <!-- display the value of the counter CloudType -->
+    <div>{{counter.get()}}</div>
+
+    <!-- increase/decrease buttons -->
+    <button ng-click="increaseCounter()"> Increase </button>
+    <button ng-click="decreaseCounter()"> Decrease </button> <br>
+
+    <!-- set buttons that uses the 'amount' model which is (2-way) bound to the DOM input -->
+    <input type="number" ng-model="amount">
+    <button ng-click="setCounter(amount)"> Set </button>
+  </div>
+</div>
+
+<!-- Load jquery, angular, angular-cloudtypes wrapper, cloudtypes client, and the counter app -->
+<script src="../../../example-assets/js/jquery-1.10.2.min.js"></script>
+<script src="../../../example-assets/js/angular.js"></script>
+<script src="../../../example-assets/js/angular-cloudtypes.js"></script>
+<script src="../../../client/bundle.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

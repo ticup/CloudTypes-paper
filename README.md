@@ -724,35 +724,35 @@ The [cloudtypes](https://github.com/ticup/CloudTypes/blob/master/example-assets/
 
 An example usage from the grocery example:
 
-        var groceryApp = angular.module('groceryApp', ['cloudtypes', 'avbuttons']);
-        groceryApp.controller('GroceryCtrl', function ($scope, $client, $state, $cachedArray) {
-            $state.then(function (state) {
-              // Retrieve the cloud types from the stateg
-              $scope.Grocery    = state.get('Grocery');
+    var groceryApp = angular.module('groceryApp', ['cloudtypes', 'avbuttons']);
+    groceryApp.controller('GroceryCtrl', function ($scope, $client, $state, $cachedArray) {
+        $state.then(function (state) {
+          // Retrieve the cloud types from the stateg
+          $scope.Grocery    = state.get('Grocery');
 
-              // Create the CachedArray using given query function
-              $scope.cachedGroceries = $cachedArray.create(function () {
-                return $scope.Grocery
-                        .where()
-                        .orderBy('toBuy', 'desc')
-                        .entries('toBuy');
-              });
+          // Create the CachedArray using given query function
+          $scope.cachedGroceries = $cachedArray.create(function () {
+            return $scope.Grocery
+                    .where()
+                    .orderBy('toBuy', 'desc')
+                    .entries('toBuy');
+          });
 
-              // initial update of the array + set up periodic updates after yielding
-              $scope.update();
-              $client.onYield(function () {
-                $scope.$apply($scope.update);
-              });
-            });
-
-            // update the model by replacing it by the update of the cached array
-            $scope.update = function () {
-              $scope.groceries = $scope.cachedGroceries.update();
-            };
-
+          // initial update of the array + set up periodic updates after yielding
+          $scope.update();
+          $client.onYield(function () {
+            $scope.$apply($scope.update);
+          });
         });
 
-g
+        // update the model by replacing it by the update of the cached array
+        $scope.update = function () {
+          $scope.groceries = $scope.cachedGroceries.update();
+        };
+
+    });
+
+
 ### Angular-avbuttons
 If you want those online/offline buttons from in the examples to track and/or change availability of the cloudtypes server you can use the [angular-avbuttons](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-avbuttons.js) module. (Check out the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) Angular client implementation for usage)
 

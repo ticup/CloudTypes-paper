@@ -5,7 +5,7 @@ CloudTypes is a JavaScript library implementation of the CloudTypes model demons
 
 [![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes)
 
-Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
+Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
 
 The Model
 ----------
@@ -666,7 +666,7 @@ Setup app and dependencies + initialize model after retrieving state in app.js:
             // cloud types state now available from server, initialize model
             $scope.counter = state.get('counter');
 
-            // notify angular that the model might have been changed
+            // upon yielding, notify angular that the model might have been changed
             $client.onYield(function () { $scope.$apply('') });
           });
 

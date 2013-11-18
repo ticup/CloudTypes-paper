@@ -611,7 +611,7 @@ Angular Modules
 ---------------
 [example-assets/js/angular-cloudtypes.js](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-cloudtypes.js) is an AngularJS module to easily use the Cloud Types client in the AngularJS framework. Check out the [Counter](https://github.com/ticup/CloudTypes/blob/master/examples/counter-ng/client) AngularJS implementation to get started and the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) AngularJS implementation for a little more advanced usage + usage of the avbuttons module (lets you easily plug in the online/offline buttons used in the examples).
 
-<a name="counter-example-ng"></a>g
+<a name="counter-example-ng"></a>
 ### Counter Example
 Let's remake the counter example using AngularJS:
 #### Server

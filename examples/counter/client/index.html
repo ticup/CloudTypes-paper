@@ -22,7 +22,7 @@
   var client = CloudTypes.createClient();
 
   // connect to the server
-  client.connect('localhost', function (state) {
+  client.connect(window.location.hostname, function (state) {
 
     // retrieve counter + set up View
     var counter = state.get('counter');

@@ -716,40 +716,43 @@ The [cloudtypes](https://github.com/ticup/CloudTypes/blob/master/example-assets/
 > The $state service uses the $client service to automatically connect to the server with the hostname of the current window location and returns a promise for the state of that server.
 
 #### $cachedArray
-> Remember that array and entity entries are not returned as the same object every time. This has some implications when using it within a framework such as Angularjs which uses your objects used as models to store dirty information. Therefore we supply a $cachedArray service which you can use to user your cloudTypes queries as queries.
+> Remember that array and entity entries are not returned as the same object every time. This has some implications when using it within a framework such as Angularjs which uses your objects used as models to store dirty information. Therefore we supply a $cachedArray service which you can use to use array/entity queries as models.
+
 1. create(getValue)
+
 > Creates a CachedArray that will use the supplied function *getValue* to update the array. One should then call the *update()* method on this cached array and assign its value to the array to be used as model. This will make sure existing entry objects will be reused, so that frameworks can keep their dirty information in it.
 
 An example usage from the grocery example:
-    var groceryApp = angular.module('groceryApp', ['cloudtypes', 'avbuttons']);
-    groceryApp.controller('GroceryCtrl', function ($scope, $client, $state, $cachedArray) {
-        $state.then(function (state) {
-          // Retrieve the cloud types from the stateg
-          $scope.Grocery    = state.get('Grocery');
 
-          // Create the CachedArray using given query function
-          $scope.cachedGroceries = $cachedArray.create(function () {
-            return $scope.Grocery
-                    .where()
-                    .orderBy('toBuy', 'desc')
-                    .entries('toBuy');
-          });
+        var groceryApp = angular.module('groceryApp', ['cloudtypes', 'avbuttons']);
+        groceryApp.controller('GroceryCtrl', function ($scope, $client, $state, $cachedArray) {
+            $state.then(function (state) {
+              // Retrieve the cloud types from the stateg
+              $scope.Grocery    = state.get('Grocery');
 
-          // initial update of the array + set up periodic updates after yielding
-          $scope.update();
-          $client.onYield(function () {
-            $scope.$apply($scope.update);
-          });
+              // Create the CachedArray using given query function
+              $scope.cachedGroceries = $cachedArray.create(function () {
+                return $scope.Grocery
+                        .where()
+                        .orderBy('toBuy', 'desc')
+                        .entries('toBuy');
+              });
+
+              // initial update of the array + set up periodic updates after yielding
+              $scope.update();
+              $client.onYield(function () {
+                $scope.$apply($scope.update);
+              });
+            });
+
+            // update the model by replacing it by the update of the cached array
+            $scope.update = function () {
+              $scope.groceries = $scope.cachedGroceries.update();
+            };
+
         });
 
-        // update the model by replacing it by the update of the cached array
-        $scope.update = function () {
-          $scope.groceries = $scope.cachedGroceries.update();
-        };
-
-    });
-
-
+g
 ### Angular-avbuttons
 If you want those online/offline buttons from in the examples to track and/or change availability of the cloudtypes server you can use the [angular-avbuttons](https://github.com/ticup/CloudTypes/blob/master/example-assets/js/angular-avbuttons.js) module. (Check out the [Grocery List](https://github.com/ticup/CloudTypes/blob/master/examples/grocery-ng/client) Angular client implementation for usage)
 

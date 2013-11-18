@@ -5,7 +5,7 @@ CloudTypes is a JavaScript library implementation of the CloudTypes model demons
 
 [![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes)
 
-Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
+Live Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
 
 The Model
 ----------
@@ -614,7 +614,7 @@ Angular Modules
 
 ### Counter Example
 Let's remake the counter example using Angular:
-
+<a name="counter-example-ng"></a>f
 #### Server
 Stays exactly the same. As a matter of fact, we just use the server of our non-angular counter example!
 

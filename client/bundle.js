@@ -4381,7 +4381,6 @@ module.exports = CArrayEntry;
 
 function CArrayEntry(cArray, indexes) {
   this.cArray = cArray;
-  console.log('creating entry with: ' + indexes);
   this.indexes = Indexes.getIndexes(indexes, cArray);
 }
 
@@ -4446,10 +4445,6 @@ CArrayEntry.prototype.equals = function (entry) {
   return true;
 };
 },{"./Indexes":19}],11:[function(require,module,exports){
-/**
- * Created by ticup on 06/11/13.
- */
-
 /**
  * Created by ticup on 07/11/13.
  */
@@ -4748,6 +4743,7 @@ CIntDeclaration.fromJSON = function () {
 
 // register this declaration as usable (will also allow to create CInt with CloudType.fromJSON())
 CIntDeclaration.tag = "CInt";
+CInt.tag = "CInt";
 CloudType.register(CIntDeclaration);
 
 
@@ -4996,6 +4992,7 @@ CStringDeclaration.fromJSON = function () {
 
 // register this declaration as usable (will also allow to create CString with CloudType.fromJSON())
 CStringDeclaration.tag = "CString";
+CString.tag = "CString";
 CloudType.register(CStringDeclaration);
 
 
@@ -5138,7 +5135,8 @@ CloudType.declareFromTag = function (tag) {
 };
 
 CloudType.isCloudType = function (CType) {
-  return (typeof CloudType.types[CType.tag] === 'undefined');
+  return ((typeof CType.tag !== 'undefined') &&
+          (typeof CloudType.types[CType.tag] !== 'undefined'));
 };
 
 CloudType.fromJSON = function (json) {
@@ -5364,8 +5362,6 @@ Property.prototype.get = function (indexes) {
   var index;
   indexes = indexes || [];
   // TODO: perform check on types
-  console.log(this.indexes.length());
-  console.log(indexes);
   if (indexes.length !== this.indexes.length())
     throw Error("Given indexes do not match declaration of Property: " + indexes);
 
@@ -5377,7 +5373,6 @@ Property.prototype.get = function (indexes) {
 };
 
 Property.prototype.getByIndex = function (index) {
-  console.log('getting by index: ' + index);
   var ctype = this.values[index];
   if (typeof ctype === 'undefined') {
     ctype = this.CType.newFor(index);
@@ -5393,9 +5388,9 @@ Property.prototype.entries = function () {
   var self = this;
   var result = [];
   this.forEachIndex(function (index) {
-    console.log("____entry checking : " + index + "____");
-    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
-    console.log("default: " + self.cArray.state.isDefault(self.getByIndex(index)));
+//    console.log("____entry checking : " + index + "____");
+//    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
+//    console.log("default: " + self.cArray.state.isDefault(self.getByIndex(index)));
     if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.getByIndex(index))) {
       result.push(self.cArray.getByIndex(index));
     }
@@ -5418,7 +5413,6 @@ Property.fromJSON = function (json, cArray) {
   Object.keys(json.values).forEach(function (index) {
     values[index] = CType.fromJSON(json.values[index], index);
   });
-  console.log(CType);
   return new Property(json.name, CType, cArray, values);
 };
 
@@ -5469,7 +5463,6 @@ State.prototype.declare = function (name, array) {
     // CSet properties -> declare their proxy Entity and give reference to the CSet properties
     array.forEachProperty(function (property) {
       if (property.CType.prototype === CSetPrototype) {
-        console.log('detected CSet');
         self.declare(array.name + property.name, CEntity.declare([{entryIndex: 'string'}, {element: property.CType.elementType}], {}));
         property.CType.entity = self.get(array.name + property.name);
       }

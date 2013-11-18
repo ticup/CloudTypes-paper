@@ -1,8 +1,4 @@
 /**
- * Created by ticup on 06/11/13.
- */
-
-/**
  * Created by ticup on 07/11/13.
  */
 module.exports = CArrayQuery;

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>CloudTypes: Grocery List Example</title>
+
+  <!-- Bootstrap core CSS -->
+  <!--<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">-->
+  <link rel="stylesheet" href="../../../example-assets/css/bootstrap.min.css">
+  <!-- Custom styles for this template -->
+  <link href="grocery.css" rel="stylesheet">
+
+  <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+  <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+  <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+  <![endif]-->
+</head>
+
+<body ng-app="groceryApp" ng-controller="GroceryCtrl" ng-click="toggleBuy(null, $event)">
+
+<div id="wrap">
+  <div class="container">
+    <div class="network-actions">
+      <button href="#" id='disconnect-btn' class="btn btn-default btn-sm pull-right">Offline</button>
+      <button href="#" id='connect-btn' class="btn btn-default btn-sm pull-right active">Online</button>
+    </div>
+    <div class="clearfix"></div>
+  <div class="text-center">
+
+    <h1>CloudTypes Example: Grocery List</h1>
+    <p class="lead">Add new groceries using the form at the bottom <br> and mark the amount you bought of an item by clicking it in the list. Track/Adjust connectivity using the online/offline buttons.</p>
+
+        <div class="center-block">
+          <p>Total to buy: </p><span class="totalitems">{{totalItems.get()}}</span>
+
+          <ul class='list-group grocerylist'>
+            <li ng-repeat="grocery in groceries" ng-model="groceries" ng-class='{buying: buying == grocery}' class='list-group-item grocery-item' ng-click="toggleBuy(grocery, $event)  ">
+              <span class='key-name'>{{grocery.key('name')}}</span>
+              <span class='badge property-toBuy'>{{grocery.get('toBuy').get()}}</span>
+              <form role=form class='form-inline buy' ng-submit="boughtGrocery(grocery, count)">
+                <div class='form-group'>
+                  <div class=input-group>
+                    <input type='number' grocery-focus="grocery == buying" grocery-blur="stopBuying(grocery)" ng-model="count" class='form-control' placeholder='Amount Bought'>
+                  </div>
+                </div>
+                <div class=form-group>
+                  <input type='submit' class='form-control btn' id='boughtgrocerysubmit' value='OK' >
+                </div>
+              </form>
+            </li>
+          </ul>
+
+          <form id="newgroceryform" role="form" ng-submit="addGrocery(name, quantity)" class="form-inline">
+            <div class="form-group">
+              <label class="sr-only" for="newgroceryname">Grocery name</label>
+              <input type="text" ng-model="name" id="newgroceryname" placeholder="Enter Grocery" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="sr-only" for="newgrocerytobuy">Grocery quantity</label>
+              <input type="text" ng-model="quantity" id="newgrocerytobuy" placeholder="Enter Quantity" class="form-control">
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary form-control">Add Grocery</button>
+            </div>
+          </form>
+
+        </div>
+
+
+  </div>
+
+</div>
+
+</div>
+
+<div id="footer">
+  <div class="container">
+    <p class="text-muted credit">Example Courtesy by <a href="http://www.github.com/ticup">Tim Coppieters</a> for <a href="http://github.com/ticup/CloudType.js">CloudType.js</a></p>
+  </div>
+</div>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!--<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>-->
+<!--<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.1/js/bootstrap.min.js"></script>-->
+<script src="../../../example-assets/js/jquery-1.10.2.min.js"></script>
+<script src="../../../example-assets/js/bootstrap.min.js"></script>
+<script src="../../../example-assets/js/angular.js"></script>
+<script src="../../../example-assets/js/angular-route.js"></script>
+<script src="../../../example-assets/js/angular-cloudtypes.js"></script>
+<script src="../../../example-assets/js/availabilityButtons.js"></script>
+<script src="../../../example-assets/js/client-utils.js"></script>
+<script src="../../../client/bundle.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

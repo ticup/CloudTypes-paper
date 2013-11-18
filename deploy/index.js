@@ -6,6 +6,7 @@
 var declareCounter  = require('../examples/counter/server/deploy.js');
 var declareGrocery  = require('../examples/grocery/server/grocery.js');
 var declareProjects = require('../examples/projects/server/projects.js');
+//var declareAgenda   = require('../examples/agenda/server/app.js');
 
 var CloudTypes = require('../server/main.js');
 
@@ -16,6 +17,7 @@ var port = process.env.PORT || 8080;
 declareCounter(server);
 declareGrocery(server);
 declareProjects(server);
+//declareAgenda(server);
 
 server.publish(port, __dirname + '/../');
 

@@ -31,8 +31,6 @@ Property.prototype.get = function (indexes) {
   var index;
   indexes = indexes || [];
   // TODO: perform check on types
-  console.log(this.indexes.length());
-  console.log(indexes);
   if (indexes.length !== this.indexes.length())
     throw Error("Given indexes do not match declaration of Property: " + indexes);
 
@@ -44,7 +42,6 @@ Property.prototype.get = function (indexes) {
 };
 
 Property.prototype.getByIndex = function (index) {
-  console.log('getting by index: ' + index);
   var ctype = this.values[index];
   if (typeof ctype === 'undefined') {
     ctype = this.CType.newFor(index);
@@ -60,9 +57,9 @@ Property.prototype.entries = function () {
   var self = this;
   var result = [];
   this.forEachIndex(function (index) {
-    console.log("____entry checking : " + index + "____");
-    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
-    console.log("default: " + self.cArray.state.isDefault(self.getByIndex(index)));
+//    console.log("____entry checking : " + index + "____");
+//    console.log("deleted: " + self.cArray.state.deleted(index, self.cArray));
+//    console.log("default: " + self.cArray.state.isDefault(self.getByIndex(index)));
     if (!self.cArray.state.deleted(index, self.cArray) && !self.cArray.state.isDefault(self.getByIndex(index))) {
       result.push(self.cArray.getByIndex(index));
     }
@@ -85,7 +82,6 @@ Property.fromJSON = function (json, cArray) {
   Object.keys(json.values).forEach(function (index) {
     values[index] = CType.fromJSON(json.values[index], index);
   });
-  console.log(CType);
   return new Property(json.name, CType, cArray, values);
 };
 

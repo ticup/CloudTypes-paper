@@ -4,7 +4,6 @@ module.exports = CArrayEntry;
 
 function CArrayEntry(cArray, indexes) {
   this.cArray = cArray;
-  console.log('creating entry with: ' + indexes);
   this.indexes = Indexes.getIndexes(indexes, cArray);
 }
 

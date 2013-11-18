@@ -19,7 +19,8 @@ CloudType.declareFromTag = function (tag) {
 };
 
 CloudType.isCloudType = function (CType) {
-  return (typeof CloudType.types[CType.tag] === 'undefined');
+  return ((typeof CType.tag !== 'undefined') &&
+          (typeof CloudType.types[CType.tag] !== 'undefined'));
 };
 
 CloudType.fromJSON = function (json) {

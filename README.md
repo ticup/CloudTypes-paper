@@ -75,7 +75,7 @@ In case of the *increment* and *decrement* though, all increments and decrements
 Start by setting up the server and schema:
 ### Server
 
-    var CloudTypes = require('cloudtypes').Server;
+    var CloudTypes = require('cloudtypes-paper').Server;
 
     // create a new CloudTypes server
     var cloudTypes = CloudTypes.createServer();
@@ -617,7 +617,7 @@ Let's remake the counter example using AngularJS:
 #### Server
 Stays exactly the same. As a matter of fact, we just use the server of our non-angular counter example! (repeated for completeness)
 
-    var CloudTypes = require('cloudtypes').Server;
+    var CloudTypes = require('cloudtypes-paper').Server;
 
     // create a new CloudTypes server
     var cloudTypes = CloudTypes.createServer();

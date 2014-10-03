@@ -3,9 +3,9 @@ CloudTypes
 
 CloudTypes is a JavaScript library implementation of the CloudTypes model demonstrated in the paper [CloudTypes for Eventual Consistency](http://research.microsoft.com/apps/pubs/default.aspx?id=163842) by Sebastian Burckhardt, Manuel Fahndrich, Daan Leijen, and Benjamin P. Wood.
 
-[![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes)
+[![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes-paper)
 
-Live Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
+Live Examples: [Grocery List](http://cloudtypes-paper.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes-paper.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes-paper.herokuapp.com/examples/projects/client/index.html)
 
 The Model
 ----------

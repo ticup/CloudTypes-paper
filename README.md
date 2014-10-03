@@ -3,9 +3,9 @@ CloudTypes
 
 CloudTypes is a JavaScript library implementation of the CloudTypes model demonstrated in the paper [CloudTypes for Eventual Consistency](http://research.microsoft.com/apps/pubs/default.aspx?id=163842) by Sebastian Burckhardt, Manuel Fahndrich, Daan Leijen, and Benjamin P. Wood.
 
-[![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes)
+[![Build Status](https://travis-ci.org/ticup/CloudTypes.png)](https://travis-ci.org/ticup/CloudTypes-paper)
 
-Live Examples: [Grocery List](http://cloudtypes.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes.herokuapp.com/examples/projects/client/index.html)
+Live Examples: [Grocery List](http://cloudtypes-paper.herokuapp.com/examples/grocery/client/index.html), [Grocery List Angularjs](http://cloudtypes-paper.herokuapp.com/examples/grocery-ng/client/index.html), [Projects Manager](http://cloudtypes-paper.herokuapp.com/examples/projects/client/index.html)
 
 The Model
 ----------
@@ -75,7 +75,7 @@ In case of the *increment* and *decrement* though, all increments and decrements
 Start by setting up the server and schema:
 ### Server
 
-    var CloudTypes = require('cloudtypes').Server;
+    var CloudTypes = require('cloudtypes-paper').Server;
 
     // create a new CloudTypes server
     var cloudTypes = CloudTypes.createServer();
@@ -617,7 +617,7 @@ Let's remake the counter example using AngularJS:
 #### Server
 Stays exactly the same. As a matter of fact, we just use the server of our non-angular counter example! (repeated for completeness)
 
-    var CloudTypes = require('cloudtypes').Server;
+    var CloudTypes = require('cloudtypes-paper').Server;
 
     // create a new CloudTypes server
     var cloudTypes = CloudTypes.createServer();

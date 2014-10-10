@@ -18,7 +18,7 @@
     "shortid": "*"
   },
   "devDependencies": {
-    "should": "*",
+    "should": "3.x.x",
     "mocha": "*"
   },
   "optionalDependencies": {

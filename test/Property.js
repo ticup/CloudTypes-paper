@@ -89,9 +89,9 @@ describe('Property state independent operations', function () {
         idxs.push(index);
       });
       idxs.length.should.equal(3);
-      idxs.should.include('[foo]');
-      idxs.should.include('[bar]');
-      idxs.should.include('[foobar]');
+      idxs.should.containEql('[foo]');
+      idxs.should.containEql('[bar]');
+      idxs.should.containEql('[foobar]');
     });
   });
 

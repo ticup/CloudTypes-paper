@@ -6,7 +6,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url" : "https://github.com/ticup/CloudTypes.git"
+    "url" : "https://github.com/ticup/CloudTypes-paper.git"
   },
   "engines": {
     "node": "0.12.x",

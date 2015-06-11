@@ -29,6 +29,7 @@ State.prototype.yield = function () {
     console.log('yield: got revision from server');
     this.toJoin.joinIn(this);
     this.received = false;
+    this.triggerOnYield();
     return this;
   }
   // (C) expecting a revision, but not present yet
@@ -42,6 +43,16 @@ State.prototype.yield = function () {
   this.applyFork();
   this.pending  = true;
   this.received = false;
+};
+
+State.prototype.triggerOnYield = function () {
+  if (typeof this.onYieldCb === "Function") {
+    this.onYieldCb(this);
+  }
+};
+
+State.prototype.onYield = function (cb) {
+  this.onYieldCb = cb;
 };
 
 // callback should take 1 argument that is set if it could not flush with server

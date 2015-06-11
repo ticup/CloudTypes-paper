@@ -17,8 +17,8 @@ CIntDeclaration.fromJSON = function () {
 
 
 // register this declaration as usable (will also allow to create CInt with CloudType.fromJSON())
-CIntDeclaration.tag = "CInt";
-CInt.tag = "CInt";
+CIntDeclaration.tag = "Int";
+CInt.tag = "Int";
 CloudType.register(CIntDeclaration);
 
 

@@ -11,14 +11,14 @@ function CStringDeclaration() { }
 
 CStringDeclaration.declare = function () {
   return CString;
-}
+};
 CStringDeclaration.fromJSON = function () {
   return CString;
-}
+};
 
 // register this declaration as usable (will also allow to create CString with CloudType.fromJSON())
-CStringDeclaration.tag = "CString";
-CString.tag = "CString";
+CStringDeclaration.tag = "String";
+CString.tag = "String";
 CloudType.register(CStringDeclaration);
 
 
@@ -28,6 +28,7 @@ function CString(value, written, cond) {
   this.written = written || false;
   this.cond    = cond    || false;
 }
+
 // put CloudType in prototype chain.
 CString.prototype = Object.create(CloudType.prototype);
 

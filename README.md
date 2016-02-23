@@ -60,7 +60,7 @@ Getting Started
 ---------------
 Assuming one of the latest Node version is installed and you are in your project directory:
 
-    npm install cloudtypes
+    npm install cloudtypes-paper
 
 That's it, even better is of course to add it as a dependency to your package.json file.
 
@@ -114,7 +114,7 @@ Load the CloudTypes client bundle into your html and start using the distributed
       var client = CloudTypes.createClient();
 
       // connect to the server
-      client.connect(window.location.hostname, function (state) {
+      client.connect(window.location.hostname + ":" + window.location.port, function (state) {
 
         // retrieve counter + set up View
         var counter = state.get('counter');

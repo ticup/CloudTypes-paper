@@ -7,7 +7,7 @@
 var State, connect, disconnect;
 
 var client = CloudTypes.createClient();
-client.connect(window.location.hostname, function (state) {
+client.connect(window.location.hostname + ":" + window.location.port, function (state) {
   // on initial connect
 
   State = state; // debug

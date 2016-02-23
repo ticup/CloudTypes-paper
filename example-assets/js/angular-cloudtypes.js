@@ -90,7 +90,7 @@ angular
     .service('$state', function ($window, $q, $client) {
       var deferred = $q.defer();
 
-      $client.connect($window.location.hostname, 100)
+      $client.connect($window.location.hostname + ":" + $window.location.port, 100)
              .onConnect(function (state) {
         $window.State = state; // debug
         deferred.resolve(state);

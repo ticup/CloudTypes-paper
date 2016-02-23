@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+<head>
+	<title>First try CloudTypes</title>
+</head>
+<body>
+<h1>Measure Station</h1>
+<div id="container-measurements">
+	<p>
+		Temperature : <input id="temperature-tf" type="number" value="0"/> <button id="temperature-btn">Add</button>
+	</p>
+</div>
+
+<div id="container-saved">
+	<strong>Saved measurements :</strong>
+	<table>
+		<tr>
+			<td>Temperature :</td><td><span id="temperature"></span></td>
+		</tr>
+	</table>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script src="/../../client/bundle.js"></script>
+<script>
+	// CloudTypes
+	//////////////
+	// create a new CloudTypes client
+	var client = CloudTypes.createClient();
+
+	// connect to the server
+	console.log(window.location.hostname);
+	client.connect(window.location.hostname + ":" + window.location.port, function(state){
+
+		// retrieve temperature + set up View
+		var temperature = state.get('temperature');
+		var container = $('#counter-measurements');
+		var saved = $('#container-saved');
+		var temperatureView = new TemperatureView(temperature, container, saved);
+
+		// set up continuous synchronization with the server + updating of view
+		setInterval(function(){
+			state.yield();
+			temperatureView.update();
+		}, 200);
+	});
+
+	// TemperatureView
+	///////////////////
+	// keeps the DOM in sync with the cloudtype
+	function TemperatureView(temperature, container, saved){
+		var self = this;
+		this.temperature = temperature;
+		this.container = container;
+		this.saved = saved;
+		this.temperature_f = saved.find('#temperature');
+
+		// Set temperature add button
+		container.find('#temperature-btn').click(function(){
+			var temp = container.find('#temperature-tf').val();
+			self.temperature.set(temp);
+			self.update();
+		})
+	}
+
+	TemperatureView.prototype.update = function(){
+		this.temperature_f.html(this.temperature.get());
+	}
+</script>
+
+</html>

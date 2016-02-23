@@ -17,8 +17,8 @@ CStringDeclaration.fromJSON = function () {
 };
 
 // register this declaration as usable (will also allow to create CString with CloudType.fromJSON())
-CStringDeclaration.tag = "String";
-CString.tag = "String";
+CStringDeclaration.tag = "CString";
+CString.tag = "CString";
 CloudType.register(CStringDeclaration);
 
 

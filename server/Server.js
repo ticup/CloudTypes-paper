@@ -24,6 +24,7 @@ Server.prototype.open = function (target, staticPath) {
     console.log("-> from path: " + staticPath);
     target = require('http').createServer(function (req, res) {
       req.addListener('end', function () {
+        console.log(req.url);
         file.serve(req, res);
       }).resume();
     }).listen(target);

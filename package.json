@@ -6,16 +6,16 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url" : "https://github.com/ticup/CloudTypes-paper.git"
+    "url": "https://github.com/ticup/CloudTypes-paper.git"
   },
   "engines": {
     "node": "0.12.x",
     "npm": "1.2.x"
   },
   "dependencies": {
-    "socket.io": "*",
-    "socket.io-client": "*",
-    "shortid": "*"
+    "shortid": "^2.2.4",
+    "socket.io": "^1.4.5",
+    "socket.io-client": "^1.4.5"
   },
   "devDependencies": {
     "should": "3.x.x",

@@ -844,7 +844,7 @@ Furthermore it consists of a Client, which governs the websockets, a ClientState
 The server code has somewhat the same structure as the client code: it has a Server, which governs the websockets, a ServerState, which is an extension of the shared State (adds for example the declare operation) and a CloudTypeServer, which uses a Server and a ServerState to set up a CloudType server.
 
 ### Testing
-The library uses the [mocha](http://visionmedia.github.io/mocha/) test framework with the [should](https://github.com/visionmedia/should.js/) assertion module for testing.
+The library uses the [mocha](http://mochajs.org/) test framework with the [should](https://github.com/visionmedia/should.js/) assertion module for testing.
 
 Assuming you have installed the dev dependencies, you can start the tests from the root by running
 
